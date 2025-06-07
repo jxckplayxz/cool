@@ -4,11 +4,6 @@ local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LocalPlayer = Players.LocalPlayer
 
---🌿 Garden Setup (modify as needed)
-local garden = workspace:WaitForChild("Gardens"):WaitForChild(LocalPlayer.Name)
-local sellRemote = ReplicatedStorage.Remotes:WaitForChild("SellPlant") -- remote to sell
-local plantRemote = ReplicatedStorage.Remotes:WaitForChild("PlantSeed") -- remote to plant
-
 --🌿 AutoFarm States
 local autoSellEnabled, autoPlantEnabled, dangerModeConfirmed = false, false, false
 local selectedFruits = {}
