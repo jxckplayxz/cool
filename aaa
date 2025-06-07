@@ -1,0 +1,221 @@
+--🌿 Services
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local LocalPlayer = Players.LocalPlayer
+
+--🌿 Garden Setup (modify as needed)
+local garden = workspace:WaitForChild("Gardens"):WaitForChild(LocalPlayer.Name)
+local sellRemote = ReplicatedStorage.Remotes:WaitForChild("SellPlant") -- remote to sell
+local plantRemote = ReplicatedStorage.Remotes:WaitForChild("PlantSeed") -- remote to plant
+
+--🌿 AutoFarm States
+local autoSellEnabled, autoPlantEnabled, dangerModeConfirmed = false, false, false
+local selectedFruits = {}
+local fruits = {"Apple", "Carrot", "Tomato", "Pumpkin", "Corn"}
+
+--🌿 GUI Init
+local gui = Instance.new("ScreenGui", LocalPlayer:WaitForChild("PlayerGui"))
+gui.Name = "OrionFarmUI"
+gui.ResetOnSpawn = false
+
+--🌿 Floating Button
+local openBtn = Instance.new("ImageButton", gui)
+openBtn.Size = UDim2.new(0, 50, 0, 50)
+openBtn.Position = UDim2.new(0, 20, 0.5, -25)
+openBtn.BackgroundTransparency = 1
+openBtn.Image = "rbxassetid://7733960981" -- gear icon
+openBtn.ImageColor3 = Color3.fromRGB(80, 160, 255)
+
+--🌿 Main Frame
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.new(0, 330, 0, 450)
+frame.Position = UDim2.new(0.05, 0, 0.2, 0)
+frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+frame.Visible = false
+frame.BorderSizePixel = 0
+frame.ClipsDescendants = true
+frame.Active = true
+frame.Draggable = true
+
+local corner = Instance.new("UICorner", frame)
+corner.CornerRadius = UDim.new(0, 12)
+
+--🌿 Top Bar
+local topBar = Instance.new("TextLabel", frame)
+topBar.Size = UDim2.new(1, 0, 0, 40)
+topBar.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+topBar.Text = "🌿 Orion AutoFarm Panel"
+topBar.TextColor3 = Color3.fromRGB(255, 255, 255)
+topBar.Font = Enum.Font.GothamBold
+topBar.TextSize = 18
+
+local barCorner = Instance.new("UICorner", topBar)
+barCorner.CornerRadius = UDim.new(0, 12)
+
+--🌿 Status Text
+local statusLabel = Instance.new("TextLabel", frame)
+statusLabel.Position = UDim2.new(0, 0, 0, 45)
+statusLabel.Size = UDim2.new(1, 0, 0, 20)
+statusLabel.BackgroundTransparency = 1
+statusLabel.Text = "❌ AutoSell Disabled"
+statusLabel.TextColor3 = Color3.fromRGB(255, 80, 80)
+statusLabel.Font = Enum.Font.Gotham
+statusLabel.TextSize = 14
+
+--🌿 Password
+local passwordBox = Instance.new("TextBox", frame)
+passwordBox.PlaceholderText = "Enter password to unlock AutoSell (0000)"
+passwordBox.Position = UDim2.new(0.05, 0, 0, 70)
+passwordBox.Size = UDim2.new(0.9, 0, 0, 30)
+passwordBox.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+passwordBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+passwordBox.Font = Enum.Font.Gotham
+passwordBox.TextSize = 14
+passwordBox.ClearTextOnFocus = false
+
+--🌿 Toggle Buttons
+local function createToggle(text, yPos, defaultColor)
+	local btn = Instance.new("TextButton", frame)
+	btn.Position = UDim2.new(0.05, 0, 0, yPos)
+	btn.Size = UDim2.new(0.9, 0, 0, 35)
+	btn.BackgroundColor3 = defaultColor
+	btn.Text = text
+	btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	btn.Font = Enum.Font.GothamBold
+	btn.TextSize = 15
+	local ui = Instance.new("UICorner", btn)
+	ui.CornerRadius = UDim.new(0, 8)
+	return btn
+end
+
+local toggleSell = createToggle("✅ Enable AutoSell", 110, Color3.fromRGB(60, 130, 90))
+local togglePlant = createToggle("🌱 Enable AutoPlant", 150, Color3.fromRGB(90, 110, 180))
+
+--🌿 Fruit Checkboxes
+local checkboxStartY = 200
+for i, fruit in ipairs(fruits) do
+	local box = Instance.new("TextButton", frame)
+	box.Position = UDim2.new(0.05, 0, 0, checkboxStartY + ((i - 1) * 28))
+	box.Size = UDim2.new(0.9, 0, 0, 25)
+	box.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+	box.Text = "[ ] " .. fruit
+	box.TextColor3 = Color3.fromRGB(255, 255, 255)
+	box.Font = Enum.Font.Gotham
+	box.TextSize = 14
+	box.MouseButton1Click:Connect(function()
+		if selectedFruits[fruit] then
+			selectedFruits[fruit] = nil
+			box.Text = "[ ] " .. fruit
+		else
+			selectedFruits[fruit] = true
+			box.Text = "[✔] " .. fruit
+		end
+	end)
+	local corner = Instance.new("UICorner", box)
+	corner.CornerRadius = UDim.new(0, 6)
+end
+
+--🌿 Minimize Button
+local minimize = Instance.new("TextButton", topBar)
+minimize.Text = "—"
+minimize.Size = UDim2.new(0, 35, 1, 0)
+minimize.Position = UDim2.new(1, -40, 0, 0)
+minimize.TextColor3 = Color3.fromRGB(255, 255, 255)
+minimize.Font = Enum.Font.GothamBold
+minimize.BackgroundTransparency = 1
+minimize.TextSize = 20
+
+--🌿 Button Logic
+openBtn.MouseButton1Click:Connect(function()
+	frame.Visible = true
+	frame.Position = UDim2.new(0.05, 0, 1.2, 0)
+	TweenService:Create(frame, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+		Position = UDim2.new(0.05, 0, 0.2, 0)
+	}):Play()
+end)
+
+minimize.MouseButton1Click:Connect(function()
+	TweenService:Create(frame, TweenInfo.new(0.3), {
+		Position = UDim2.new(0.05, 0, 1.2, 0)
+	}):Play()
+	wait(0.3)
+	frame.Visible = false
+end)
+
+--🌿 Toggle Logic
+toggleSell.MouseButton1Click:Connect(function()
+	if not dangerModeConfirmed then
+		if passwordBox.Text == "0000" then
+			dangerModeConfirmed = true
+			statusLabel.Text = "✅ Password Confirmed"
+			statusLabel.TextColor3 = Color3.fromRGB(80, 255, 80)
+			wait(1)
+		else
+			statusLabel.Text = "❌ Incorrect Password"
+			statusLabel.TextColor3 = Color3.fromRGB(255, 80, 80)
+			return
+		end
+	end
+
+	autoSellEnabled = not autoSellEnabled
+	statusLabel.Text = autoSellEnabled and "✅ AutoSell Enabled" or "❌ AutoSell Disabled"
+	statusLabel.TextColor3 = autoSellEnabled and Color3.fromRGB(80, 255, 80) or Color3.fromRGB(255, 80, 80)
+end)
+
+togglePlant.MouseButton1Click:Connect(function()
+	autoPlantEnabled = not autoPlantEnabled
+	togglePlant.Text = autoPlantEnabled and "🌱 AutoPlant Enabled" or "🌱 Enable AutoPlant"
+	togglePlant.BackgroundColor3 = autoPlantEnabled and Color3.fromRGB(80, 160, 100) or Color3.fromRGB(90, 110, 180)
+end)
+
+--🌿 Helper: Find Seed & Soil
+local function getAvailableSeed()
+	for _, tool in pairs(LocalPlayer.Backpack:GetChildren()) do
+		if tool:IsA("Tool") and tool.Name:lower():find("seed") then
+			return tool.Name
+		end
+	end
+	return nil
+end
+
+local function getRandomSoil()
+	local soils = garden:FindFirstChild("SoilPlots")
+	if not soils then return nil end
+	local free = {}
+	for _, p in pairs(soils:GetChildren()) do
+		if not p:FindFirstChild("Plant") then
+			table.insert(free, p)
+		end
+	end
+	return #free > 0 and free[math.random(1, #free)] or nil
+end
+
+--🌿 Auto Loops
+task.spawn(function()
+	while task.wait(1) do
+		if autoSellEnabled and dangerModeConfirmed then
+			local plants = garden:FindFirstChild("Plants")
+			if plants then
+				for _, plant in pairs(plants:GetChildren()) do
+					local grown = plant:FindFirstChild("Grown")
+					if grown and grown.Value and selectedFruits[plant.Name] then
+						sellRemote:FireServer(plant)
+					end
+				end
+			end
+		end
+	end
+end)
+
+task.spawn(function()
+	while task.wait(2) do
+		if autoPlantEnabled then
+			local seed = getAvailableSeed()
+			local soil = getRandomSoil()
+			if seed and soil then
+				plantRemote:FireServer(seed, soil)
+			end
+		end
+	end
+end)
