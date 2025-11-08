@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>CardsLawP — Gift Cards</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <script src="https://js.stripe.com/v3/"></script>
+  <script src="https://www.paypal.com/sdk/js?client-id=YOUR_PAYPAL_CLIENT_ID&currency=USD"></script>
+</head>
+<body>
+  <header class="hotbar glass" id="hotbar">
+    <div class="logo">CardsLawP</div>
+    <nav class="tabs">
+      <button data-tab="shop" class="active">Shop</button>
+      <button data-tab="profile">Profile</button>
+      <button data-tab="cart">Cart</button>
+    </nav>
+    <div class="auth">
+      <button id="loginBtn">Login / Verify</button>
+    </div>
+  </header>
+
+  <main id="main">
+    <section id="shop" class="tab-content">
+      <div class="products-grid" id="products"></div>
+    </section>
+
+    <section id="profile" class="tab-content hidden">
+      <div class="panel glass">
+        <h2>Profile</h2>
+        <label>Email: <input id="email" type="email" /></label>
+        <div><button id="sendEmailCode">Send Email Code</button></div>
+        <label>Phone: <input id="phone" type="tel" /></label>
+        <div><button id="sendSms">Send SMS Code</button></div>
+        <div id="verifyControls" style="margin-top:10px;">
+          <input id="verifyCode" placeholder="Enter code" />
+          <button id="verifyBtn">Verify</button>
+        </div>
+        <div id="adminAdd" class="hidden">
+          <h3>Admin - Add Product</h3>
+          <input id="adminName" placeholder="Name" /><input id="adminPrice" placeholder="Price cents" />
+          <input id="adminImage" placeholder="Image URL" />
+          <button id="adminAddBtn">Add</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="cart" class="tab-content hidden">
+      <div class="panel glass">
+        <h2>Your Cart</h2>
+        <div id="cartItems"></div>
+        <div class="checkout-actions">
+          <button id="stripeCheckout">Pay with Card (Stripe)</button>
+          <div id="paypal-button-container"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Cart drawer -->
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
