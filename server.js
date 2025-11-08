@@ -1,16 +1,16 @@
 // === CardsLawp Gift Card Store ===
 // Express server with Stripe + PayPal checkout
-// No verification required (clean + deployable)
+// No verification required (Render-safe CommonJS version)
 
-import express from "express";
-import path from "path";
-import bodyParser from "body-parser";
-import session from "express-session";
-import Stripe from "stripe";
-import paypal from "@paypal/checkout-server-sdk";
-import dotenv from "dotenv";
-import nodemailer from "nodemailer";
-import fs from "fs";
+const express = require("express");
+const path = require("path");
+const bodyParser = require("body-parser");
+const session = require("express-session");
+const Stripe = require("stripe");
+const paypal = require("@paypal/checkout-server-sdk");
+const dotenv = require("dotenv");
+const nodemailer = require("nodemailer");
+const fs = require("fs");
 
 dotenv.config();
 
@@ -42,8 +42,9 @@ app.use(
 app.use(express.static("public"));
 
 // === Simulated Database (JSON file) ===
-const dataFile = path.join("data", "giftcards.json");
-if (!fs.existsSync("data")) fs.mkdirSync("data");
+const dataDir = path.join(__dirname, "data");
+const dataFile = path.join(dataDir, "giftcards.json");
+if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir);
 if (!fs.existsSync(dataFile)) fs.writeFileSync(dataFile, "[]", "utf-8");
 
 function readCards() {
@@ -57,7 +58,7 @@ function saveCards(cards) {
 
 // Homepage
 app.get("/", (req, res) => {
-  res.sendFile(path.join(process.cwd(), "public", "index.html"));
+  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
 // API to get all cards
@@ -65,7 +66,7 @@ app.get("/api/cards", (req, res) => {
   res.json(readCards());
 });
 
-// Admin login (simple)
+// Admin login
 app.post("/login", (req, res) => {
   const { email } = req.body;
   if (email === process.env.ADMIN_EMAIL) {
