@@ -13,8 +13,7 @@
     <div class="nav-links">
       <a href="#" id="homeTab" class="active">Home</a>
       <a href="#" id="requestTab">Suggest</a>
-      <a href="#" id="adminTab" style="display:none;">Admin</a>
-      <a href="#" id="loginBtn">Login</a>
+      <button id="cartBtn">Cart 🛒 (<span id="cartCount">0</span>)</button>
     </div>
   </nav>
 
@@ -26,9 +25,7 @@
   </header>
 
   <!-- Gift Cards Section -->
-  <section class="cards-container" id="productSection">
-    <!-- Gift cards are dynamically loaded from backend -->
-  </section>
+  <section class="cards-container" id="productSection"></section>
 
   <!-- Suggest Gift Card Section -->
   <section class="suggest fade" id="suggestSection" style="display:none;">
@@ -37,12 +34,6 @@
     <input id="reqImg" placeholder="Image URL">
     <textarea id="reqDesc" placeholder="Description"></textarea>
     <button id="reqSubmit">Submit Request</button>
-  </section>
-
-  <!-- Admin Panel Section -->
-  <section class="admin fade" id="adminPanel" style="display:none;">
-    <h2>Admin Requests</h2>
-    <div id="requestsList"></div>
   </section>
 
   <!-- Item Preview Modal -->
@@ -54,147 +45,160 @@
       <p id="modalDesc"></p>
       <div class="modal-actions">
         <button class="addCartBtn">Add to Cart</button>
-        <button class="buyNowBtn">Buy Now</button>
       </div>
     </div>
   </div>
 
-  <!-- Login Modal -->
-  <div class="modal" id="loginModal">
-    <div class="modal-content login-box">
-      <span class="close" onclick="closeLogin()">&times;</span>
-      <h2>Admin Login</h2>
-      <input type="text" id="email" placeholder="Email">
-      <input type="password" id="password" placeholder="Password">
-      <button id="loginSubmit">Login</button>
-    </div>
+  <!-- Cart Sidebar -->
+  <div id="cartSidebar">
+    <h2>Your Cart</h2>
+    <div id="cartItems"></div>
+    <h3>Total: $<span id="cartTotal">0</span></h3>
+    <button id="checkoutBtn">Checkout</button>
   </div>
 
   <script>
-    // Fade-in scroll animation
+    // -----------------------------
+    // Scroll Fade Animation
+    // -----------------------------
     const fades = document.querySelectorAll('.fade');
     window.addEventListener('scroll', () => {
       fades.forEach(el => {
         const rect = el.getBoundingClientRect();
         el.style.opacity = rect.top < window.innerHeight - 100 ? 1 : 0;
+        el.style.transform = rect.top < window.innerHeight - 100 ? 'translateY(0)' : 'translateY(30px)';
       });
     });
 
-    // Tabs logic
+    // -----------------------------
+    // Tabs
+    // -----------------------------
     const homeTab = document.getElementById('homeTab');
     const requestTab = document.getElementById('requestTab');
-    const adminTab = document.getElementById('adminTab');
     const productSection = document.getElementById('productSection');
     const suggestSection = document.getElementById('suggestSection');
-    const adminPanel = document.getElementById('adminPanel');
 
     homeTab.onclick = () => {
       productSection.style.display = 'flex';
       suggestSection.style.display = 'none';
-      adminPanel.style.display = 'none';
     };
     requestTab.onclick = () => {
       productSection.style.display = 'none';
       suggestSection.style.display = 'block';
-      adminPanel.style.display = 'none';
     };
 
-    // Fetch gift cards
-    async function loadCards() {
-      const res = await fetch('/api/cards');
-      const cards = await res.json();
-      productSection.innerHTML = cards.map(c => `
+    // -----------------------------
+    // Cart
+    // -----------------------------
+    const cartBtn = document.getElementById('cartBtn');
+    const cartSidebar = document.getElementById('cartSidebar');
+    const cartItemsDiv = document.getElementById('cartItems');
+    const cartTotalEl = document.getElementById('cartTotal');
+    const cartCount = document.getElementById('cartCount');
+
+    let cart = [];
+
+    cartBtn.onclick = () => {
+      cartSidebar.style.right = cartSidebar.style.right === '0px' ? '-350px' : '0px';
+    };
+
+    function updateCart() {
+      cartItemsDiv.innerHTML = '';
+      let total = 0;
+      cart.forEach((item, index) => {
+        total += item.price;
+        const div = document.createElement('div');
+        div.className = 'cart-item';
+        div.innerHTML = `
+          <img src="${item.image}">
+          <span>${item.name} - $${item.price}</span>
+          <button onclick="removeFromCart(${index})">X</button>
+        `;
+        cartItemsDiv.appendChild(div);
+      });
+      cartTotalEl.innerText = total.toFixed(2);
+      cartCount.innerText = cart.length;
+    }
+
+    function addToCart(item) {
+      cart.push(item);
+      updateCart();
+      cartSidebar.style.right = '0px';
+    }
+
+    function removeFromCart(index) {
+      cart.splice(index, 1);
+      updateCart();
+    }
+
+    document.getElementById('checkoutBtn').onclick = () => {
+      if(cart.length === 0) { alert('Cart is empty'); return; }
+      alert('Proceed to checkout with PayPal/Stripe integration');
+    };
+
+    // -----------------------------
+    // Load Cards (example)
+    // -----------------------------
+    const productSectionEl = document.getElementById('productSection');
+    const cards = [
+      {name:'Amazon $50', image:'https://via.placeholder.com/250x150?text=Amazon+50', description:'Amazon gift card $50', price:50},
+      {name:'Steam $20', image:'https://via.placeholder.com/250x150?text=Steam+20', description:'Steam gift card $20', price:20},
+      {name:'iTunes $25', image:'https://via.placeholder.com/250x150?text=iTunes+25', description:'iTunes gift card $25', price:25},
+    ];
+
+    function loadCards() {
+      productSectionEl.innerHTML = cards.map(c => `
         <div class="card fade">
-          <img src="${c.image}" alt="${c.name}">
+          <img src="${c.image}">
           <h2>${c.name}</h2>
           <p>${c.description}</p>
-          <button class="view-btn" onclick="showItem('${c.name}','${c.image}','${c.description}')">View</button>
+          <button onclick="showItem('${c.name}','${c.image}','${c.description}',${c.price})">View</button>
         </div>
       `).join('');
     }
     loadCards();
 
-    // Item modal
-    function showItem(title, img, desc) {
-      document.getElementById('itemModal').style.display = 'flex';
-      document.getElementById('modalTitle').innerText = title;
-      document.getElementById('modalImg').src = img;
-      document.getElementById('modalDesc').innerText = desc;
-    }
-    function closeModal() {
-      document.getElementById('itemModal').style.display = 'none';
+    // -----------------------------
+    // Item Preview Modal
+    // -----------------------------
+    const modal = document.getElementById('itemModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalImg = document.getElementById('modalImg');
+    const modalDesc = document.getElementById('modalDesc');
+    const addCartBtn = document.querySelector('.addCartBtn');
+
+    let currentItem = null;
+
+    function showItem(name,img,desc,price){
+      modal.style.display = 'flex';
+      modalTitle.innerText = name;
+      modalImg.src = img;
+      modalDesc.innerText = desc;
+      currentItem = {name,img,desc,price};
     }
 
-    // Submit gift card request
-    document.getElementById('reqSubmit').onclick = async () => {
-      const name = reqName.value;
-      const image = reqImg.value;
-      const description = reqDesc.value;
-      const res = await fetch('/api/request', {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({name,image,description})
-      });
-      const data = await res.json();
-      alert(data.message);
-      reqName.value = reqImg.value = reqDesc.value = '';
+    addCartBtn.onclick = () => {
+      if(currentItem) addToCart(currentItem);
+      closeModal();
     };
 
-    // Login modal
-    document.getElementById('loginBtn').onclick = () => {
-      document.getElementById('loginModal').style.display = 'flex';
-    };
-    function closeLogin() {
-      document.getElementById('loginModal').style.display = 'none';
+    function closeModal(){
+      modal.style.display = 'none';
     }
 
-    // Admin login
-    document.getElementById('loginSubmit').onclick = async () => {
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
-      const res = await fetch('/api/login', {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({email,password})
-      });
-      const data = await res.json();
-      if (data.success) {
-        adminTab.style.display = 'inline';
-        alert('Logged in as admin');
-      } else {
-        alert('Invalid login');
-      }
+    window.onclick = function(e){
+      if(e.target===modal) closeModal();
     };
 
-    // Admin tab
-    adminTab.onclick = async () => {
-      productSection.style.display = 'none';
-      suggestSection.style.display = 'none';
-      adminPanel.style.display = 'block';
-      const res = await fetch('/api/admin/requests');
-      const requests = await res.json();
-      const list = document.getElementById('requestsList');
-      list.innerHTML = requests.map(r => `
-        <div class="request-item">
-          <img src="${r.image}" width="100">
-          <p><b>${r.name}</b><br>${r.description}</p>
-          <button onclick="approve(${r.id})">Approve</button>
-          <button onclick="deny(${r.id})">Deny</button>
-        </div>
-      `).join('');
+    // -----------------------------
+    // Suggest Gift Card
+    // -----------------------------
+    document.getElementById('reqSubmit').onclick = () => {
+      alert('Gift card request submitted!');
+      document.getElementById('reqName').value = '';
+      document.getElementById('reqImg').value = '';
+      document.getElementById('reqDesc').value = '';
     };
-
-    async function approve(id){
-      await fetch('/api/admin/approve/'+id,{method:'POST'});
-      alert('Approved!');
-      adminTab.click();
-      loadCards();
-    }
-    async function deny(id){
-      await fetch('/api/admin/deny/'+id,{method:'POST'});
-      alert('Denied.');
-      adminTab.click();
-    }
   </script>
 </body>
 </html>
