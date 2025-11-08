@@ -1,37 +1,317 @@
-:root{
-  --glass-bg: rgba(255,255,255,0.06);
-  --accent: #5c9cff;
-  --glass-blur: 8px;
-  --card-radius: 14px;
-  --max-width: 1200px;
-  --shadow: 0 6px 24px rgba(2,6,23,0.45);
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+/* ------------------------- */
+/* General Styles            */
+/* ------------------------- */
+body {
+  margin: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #f5f5f5;
+  color: #222;
+  overflow-x: hidden;
 }
-*{box-sizing:border-box}
-body{margin:0;background:linear-gradient(180deg,#06070a 0%, #081124 100%);color:#e6eef8;min-height:100vh;}
-header.hotbar{position:fixed;left:50%;transform:translateX(-50%);top:18px;width:calc(100% - 48px);max-width:var(--max-width);display:flex;align-items:center;justify-content:space-between;padding:10px 18px;border-radius:16px;background:var(--glass-bg);backdrop-filter: blur(var(--glass-blur));box-shadow:var(--shadow);z-index:40;transition:transform .25s ease,opacity .25s;}
-header .logo{font-weight:700;font-size:18px}
-.tabs button{background:transparent;border:0;color:#cfe6ff;padding:8px 12px;border-radius:10px;margin-right:6px;cursor:pointer;transition:all .18s}
-.tabs button.active{background:linear-gradient(90deg,var(--accent),#9bf);color:#012;text-shadow:none;transform:translateY(-2px);box-shadow:0 6px 18px rgba(92,156,255,0.18)}
-main{padding-top:110px;max-width:var(--max-width);margin:0 auto;padding-left:24px;padding-right:24px}
-.products-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:18px}
-.card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:12px;padding:14px;display:flex;flex-direction:column;align-items:center;gap:10px;transition:transform .25s ease,opacity .3s;will-change:transform,opacity}
-.card img{width:140px;height:90px;object-fit:contain;border-radius:8px}
-.card h3{margin:0;font-size:15px}
-.card .price{font-weight:700}
-.add-btn{padding:8px 12px;border-radius:10px;border:0;background:linear-gradient(90deg,var(--accent),#9bf);color:#012;cursor:pointer}
-.panel{padding:18px;border-radius:12px;box-shadow:var(--shadow);max-width:900px;margin:18px auto}
-.hidden{display:none}
-.toast{position:fixed;right:20px;bottom:20px;padding:12px 18px;border-radius:10px;background:#07202b;color:#dff5ee;box-shadow:0 10px 30px rgba(2,6,23,0.6)}
-/* fade in when visible */
-.fade-in{opacity:0;transform:translateY(8px);transition:opacity .45s ease,transform .45s}
-.visible{opacity:1;transform:none}
-/* glass */
-.glass{background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));backdrop-filter:blur(var(--glass-blur));border-radius:12px;padding:12px}
-.checkout-actions{display:flex;gap:12px;align-items:center;margin-top:12px}
-#paypal-button-container{min-width:220px}
-/* Responsive */
-@media (max-width:600px){
-  header.hotbar{top:10px;border-radius:12px;padding:8px}
-  .products-grid{grid-template-columns:repeat(2,1fr)}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* ------------------------- */
+/* Navbar                    */
+/* ------------------------- */
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  backdrop-filter: blur(15px);
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 30px;
+  z-index: 999;
+  border-bottom: 1px solid rgba(255,255,255,0.3);
+  box-shadow: 0 4px 30px rgba(0,0,0,0.1);
+}
+
+.navbar .logo {
+  font-size: 1.8em;
+  font-weight: bold;
+}
+
+.navbar .nav-links a,
+.navbar .nav-links button {
+  margin-left: 20px;
+  padding: 8px 15px;
+  border-radius: 8px;
+  transition: 0.3s;
+  background: rgba(255,255,255,0.25);
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.navbar .nav-links a:hover,
+.navbar .nav-links button:hover {
+  background: rgba(255,255,255,0.45);
+}
+
+/* ------------------------- */
+/* Hero Section              */
+/* ------------------------- */
+.hero {
+  height: 60vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  margin-top: 60px;
+}
+
+.hero h1 {
+  font-size: 3em;
+  margin-bottom: 10px;
+}
+
+.hero p {
+  font-size: 1.2em;
+  margin-bottom: 20px;
+}
+
+.hero-btn {
+  padding: 12px 30px;
+  font-size: 1em;
+  border: none;
+  border-radius: 10px;
+  background: #6a5dfc;
+  color: #fff;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.hero-btn:hover {
+  background: #5847d6;
+}
+
+/* ------------------------- */
+/* Cards Section             */
+/* ------------------------- */
+.cards-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  padding: 40px 20px;
+  gap: 25px;
+}
+
+.card {
+  width: 250px;
+  background: rgba(255,255,255,0.25);
+  backdrop-filter: blur(10px);
+  border-radius: 15px;
+  padding: 15px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+  text-align: center;
+  transition: transform 0.3s, box-shadow 0.3s;
+  opacity: 0;
+  transform: translateY(30px);
+}
+
+.card img {
+  width: 100%;
+  border-radius: 12px;
+  margin-bottom: 10px;
+}
+
+.card h2 {
+  margin: 10px 0 5px;
+  font-size: 1.2em;
+}
+
+.card p {
+  font-size: 0.95em;
+  color: #333;
+  min-height: 50px;
+}
+
+.card button {
+  margin-top: 10px;
+  padding: 8px 15px;
+  border-radius: 8px;
+  border: none;
+  background: #6a5dfc;
+  color: #fff;
+  cursor: pointer;
+}
+
+.card button:hover {
+  background: #5847d6;
+}
+
+/* ------------------------- */
+/* Fade Animation            */
+/* ------------------------- */
+.fade {
+  opacity: 0;
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+/* ------------------------- */
+/* Suggest Section           */
+/* ------------------------- */
+.suggest {
+  max-width: 500px;
+  margin: 50px auto;
+  background: rgba(255,255,255,0.25);
+  padding: 20px;
+  border-radius: 15px;
+  backdrop-filter: blur(15px);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.suggest input,
+.suggest textarea {
+  padding: 10px;
+  border-radius: 10px;
+  border: none;
+  outline: none;
+}
+
+.suggest button {
+  padding: 12px;
+  border-radius: 10px;
+  border: none;
+  background: #6a5dfc;
+  color: #fff;
+  cursor: pointer;
+}
+
+.suggest button:hover {
+  background: #5847d6;
+}
+
+/* ------------------------- */
+/* Modals                    */
+/* ------------------------- */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left:0;
+  top:0;
+  width:100%;
+  height:100%;
+  background: rgba(0,0,0,0.5);
+  justify-content:center;
+  align-items:center;
+}
+
+.modal-content {
+  background: rgba(255,255,255,0.25);
+  backdrop-filter: blur(15px);
+  border-radius: 15px;
+  padding: 20px;
+  width: 90%;
+  max-width: 500px;
+  text-align:center;
+  position: relative;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+}
+
+.modal-content img {
+  width: 80%;
+  border-radius: 12px;
+  margin-bottom: 15px;
+}
+
+.modal-content h2 {
+  margin-bottom: 10px;
+}
+
+.modal-content p {
+  margin-bottom: 15px;
+}
+
+.modal-content .modal-actions button {
+  margin: 5px;
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: none;
+  background: #6a5dfc;
+  color: #fff;
+  cursor: pointer;
+}
+
+.modal-content .modal-actions button:hover {
+  background: #5847d6;
+}
+
+.close {
+  position: absolute;
+  top:10px;
+  right:15px;
+  font-size: 1.5em;
+  cursor:pointer;
+}
+
+/* ------------------------- */
+/* Cart Sidebar              */
+/* ------------------------- */
+#cartBtn {
+  margin-left: 15px;
+}
+
+#cartSidebar {
+  position: fixed;
+  right: -350px;
+  top: 0;
+  width: 350px;
+  height: 100%;
+  background: rgba(255,255,255,0.25);
+  backdrop-filter: blur(15px);
+  box-shadow: -5px 0 30px rgba(0,0,0,0.2);
+  transition: right 0.3s ease;
+  padding: 20px;
+  overflow-y: auto;
+  z-index: 9999;
+}
+
+#cartSidebar h2 {
+  text-align: center;
+}
+
+.cart-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.cart-item img {
+  width: 60px;
+  border-radius: 8px;
+}
+
+.cart-item button {
+  background:red;
+  padding:4px 8px;
+  border:none;
+  border-radius:5px;
+  cursor:pointer;
+  color:white;
+}
+
+/* ------------------------- */
+/* Buttons & General UI      */
+/* ------------------------- */
+button {
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+button:hover {
+  filter: brightness(1.1);
 }
