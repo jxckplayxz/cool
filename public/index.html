@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CardsLawp | Gift Cards Store</title>
-  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <!-- Navbar -->
@@ -17,15 +17,17 @@
     </div>
   </nav>
 
-  <!-- Hero -->
+  <!-- Hero Section -->
   <header class="hero">
     <h1>Buy Gift Cards Instantly</h1>
     <p>Fast, secure, and easy digital gift card store.</p>
     <button class="hero-btn">Shop Now</button>
   </header>
 
-  <!-- Gift Cards Section -->
-  <section class="cards-container" id="productSection"></section>
+  <!-- Cards Section -->
+  <section class="cards-container" id="productSection">
+    <!-- Admin-added gift cards will load here -->
+  </section>
 
   <!-- Suggest Gift Card Section -->
   <section class="suggest fade" id="suggestSection" style="display:none;">
@@ -58,9 +60,7 @@
   </div>
 
   <script>
-    // -----------------------------
-    // Scroll Fade Animation
-    // -----------------------------
+    // Scroll fade animation
     const fades = document.querySelectorAll('.fade');
     window.addEventListener('scroll', () => {
       fades.forEach(el => {
@@ -70,9 +70,7 @@
       });
     });
 
-    // -----------------------------
     // Tabs
-    // -----------------------------
     const homeTab = document.getElementById('homeTab');
     const requestTab = document.getElementById('requestTab');
     const productSection = document.getElementById('productSection');
@@ -81,21 +79,22 @@
     homeTab.onclick = () => {
       productSection.style.display = 'flex';
       suggestSection.style.display = 'none';
+      homeTab.classList.add('active');
+      requestTab.classList.remove('active');
     };
     requestTab.onclick = () => {
       productSection.style.display = 'none';
       suggestSection.style.display = 'block';
+      homeTab.classList.remove('active');
+      requestTab.classList.add('active');
     };
 
-    // -----------------------------
     // Cart
-    // -----------------------------
     const cartBtn = document.getElementById('cartBtn');
     const cartSidebar = document.getElementById('cartSidebar');
     const cartItemsDiv = document.getElementById('cartItems');
     const cartTotalEl = document.getElementById('cartTotal');
     const cartCount = document.getElementById('cartCount');
-
     let cart = [];
 
     cartBtn.onclick = () => {
@@ -136,37 +135,12 @@
       alert('Proceed to checkout with PayPal/Stripe integration');
     };
 
-    // -----------------------------
-    // Load Cards (example)
-    // -----------------------------
-    const productSectionEl = document.getElementById('productSection');
-    const cards = [
-      {name:'Amazon $50', image:'https://via.placeholder.com/250x150?text=Amazon+50', description:'Amazon gift card $50', price:50},
-      {name:'Steam $20', image:'https://via.placeholder.com/250x150?text=Steam+20', description:'Steam gift card $20', price:20},
-      {name:'iTunes $25', image:'https://via.placeholder.com/250x150?text=iTunes+25', description:'iTunes gift card $25', price:25},
-    ];
-
-    function loadCards() {
-      productSectionEl.innerHTML = cards.map(c => `
-        <div class="card fade">
-          <img src="${c.image}">
-          <h2>${c.name}</h2>
-          <p>${c.description}</p>
-          <button onclick="showItem('${c.name}','${c.image}','${c.description}',${c.price})">View</button>
-        </div>
-      `).join('');
-    }
-    loadCards();
-
-    // -----------------------------
-    // Item Preview Modal
-    // -----------------------------
+    // Item preview modal
     const modal = document.getElementById('itemModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalImg = document.getElementById('modalImg');
     const modalDesc = document.getElementById('modalDesc');
     const addCartBtn = document.querySelector('.addCartBtn');
-
     let currentItem = null;
 
     function showItem(name,img,desc,price){
@@ -190,15 +164,34 @@
       if(e.target===modal) closeModal();
     };
 
-    // -----------------------------
     // Suggest Gift Card
-    // -----------------------------
     document.getElementById('reqSubmit').onclick = () => {
-      alert('Gift card request submitted!');
+      alert('Gift card request submitted for admin approval!');
       document.getElementById('reqName').value = '';
       document.getElementById('reqImg').value = '';
       document.getElementById('reqDesc').value = '';
+      // Here, you would send a request to the backend for admin review
     };
+
+    // Load admin cards (fetch from backend API)
+    async function loadCardsFromAdmin() {
+      try {
+        const response = await fetch('/api/cards'); // backend endpoint returns approved cards
+        const cards = await response.json();
+        productSection.innerHTML = cards.map(c => `
+          <div class="card fade">
+            <img src="${c.image}">
+            <h2>${c.name}</h2>
+            <p>${c.description}</p>
+            <button onclick="showItem('${c.name}','${c.image}','${c.description}',${c.price})">View</button>
+          </div>
+        `).join('');
+      } catch(err) {
+        productSection.innerHTML = '<p>No gift cards available right now.</p>';
+      }
+    }
+
+    loadCardsFromAdmin();
   </script>
 </body>
 </html>
