@@ -1,22 +1,151 @@
-/* ===== MOBILE RESPONSIVE (IMPROVED) ===== */
-@media (max-width: 768px) {
-  body { font-size: 4vw; } /* Scale everything a bit */
-  
-  .navbar { flex-direction: column; align-items: center; padding: 10px 5vw; }
-  .navbar .nav-links { width: 100%; flex-wrap: wrap; justify-content: center; gap: 5vw; }
-  .navbar .nav-links a, .navbar .nav-links button { flex: 1 1 40%; font-size: 3vw; }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CardsLawp | Cart</title>
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; font-family:'Arial',sans-serif; }
+body { background:#f0f2f5; color:#333; padding-top:70px; }
 
-  .hero { padding: 20vh 5vw 10vh; }
-  .hero h1 { font-size: 8vw; }
-  .hero p { font-size: 4vw; }
-  .hero .hero-btn { padding: 3vw 6vw; font-size: 4vw; }
-
-  .cards-container { padding: 10vh 5vw; gap: 5vw; }
-  .card { width: 90%; padding: 4vw; }
-  .card h2 { font-size: 4vw; }
-  .card p { font-size: 3.5vw; }
-  .card button { font-size: 3.5vw; padding: 2vw 4vw; }
-
-  .modal-content { width: 90%; padding: 5vw; }
-  #cartSidebar { width: 90%; right: -100%; }
+/* NAVBAR */
+.navbar {
+  position: fixed; top:0; width:100%; display:flex; justify-content:space-between; align-items:center;
+  padding:10px 5vw; background:rgba(255,255,255,0.15); backdrop-filter:blur(10px); box-shadow:0 4px 6px rgba(0,0,0,0.1);
+  z-index:1000; border-radius:0 0 15px 15px;
 }
+.navbar .logo { font-size:1.5em; font-weight:bold; color:#fff; }
+.navbar .nav-links a { margin-left:20px; padding:8px 15px; border:none; background:rgba(255,255,255,0.25);
+  color:#fff; border-radius:10px; cursor:pointer; text-decoration:none; transition:0.3s; }
+.navbar .nav-links a:hover, .navbar .nav-links a.active { background:rgba(255,255,255,0.45); }
+
+/* CART CONTAINER */
+.cart-container { max-width:900px; margin:auto; padding:20px; }
+h1 { margin-bottom:20px; font-size:2em; text-align:center; }
+
+.cart-item {
+  display:flex; align-items:center; justify-content:space-between; margin-bottom:15px;
+  background:#fff; padding:10px; border-radius:12px; box-shadow:0 4px 8px rgba(0,0,0,0.1);
+}
+.cart-item img { width:60px; height:60px; border-radius:10px; margin-right:10px; }
+.cart-item-details { flex:1; }
+.cart-item h2 { font-size:1em; margin-bottom:5px; }
+.cart-item p { font-size:0.9em; margin-bottom:5px; }
+.cart-item button { padding:5px 10px; border:none; border-radius:8px; background:#f44336; color:#fff; cursor:pointer; }
+.cart-item button:hover { background:#d32f2f; }
+.cart-checkbox { margin-right:10px; width:20px; height:20px; }
+
+#checkoutBtn { width:100%; padding:15px; border:none; border-radius:12px; background:#667eea; color:#fff; margin-top:20px; cursor:pointer; font-size:1em; }
+#checkoutBtn:hover { background:#764ba2; }
+
+#selectAllContainer { display:flex; align-items:center; margin-bottom:10px; }
+#selectAllContainer input { margin-right:10px; width:20px; height:20px; }
+
+/* MOBILE RESPONSIVE */
+@media(max-width:768px){
+  body{font-size:4vw;}
+  .navbar{flex-direction:column; align-items:center;}
+  .navbar .nav-links{width:100%; flex-wrap:wrap; justify-content:center; gap:5vw;}
+  .navbar .nav-links a{flex:1 1 40%; font-size:3vw;}
+  .cart-item{flex-direction:column; align-items:flex-start;}
+  .cart-item img{margin-bottom:10px;}
+  .cart-item-details{text-align:left; width:100%;}
+  #checkoutBtn{font-size:4vw; padding:4vw;}
+}
+</style>
+</head>
+<body>
+
+<div class="navbar">
+  <div class="logo"><i data-lucide="credit-card"></i> CardsLawp</div>
+  <div class="nav-links">
+    <a href="/" ><i data-lucide="home"></i> Home</a>
+    <a href="/cart" class="active"><i data-lucide="shopping-cart"></i> Cart</a>
+    <a href="/login"><i data-lucide="user"></i> Login</a>
+  </div>
+</div>
+
+<div class="cart-container">
+  <h1>Your Cart</h1>
+  <div id="selectAllContainer">
+    <input type="checkbox" id="selectAll"> <label for="selectAll">Select All</label>
+  </div>
+  <div id="cartItems"></div>
+  <button id="checkoutBtn"><i data-lucide="credit-card"></i> Checkout Selected</button>
+</div>
+
+<script>
+lucide.createIcons();
+
+let cart = [];
+let selectedItems = new Set();
+
+// Load cart from API
+function loadCart(){
+  fetch('/api/cart')
+    .then(res=>res.json())
+    .then(data=>{
+      cart = data;
+      selectedItems = new Set(cart.map(i=>i._id));
+      renderCart();
+    });
+}
+
+function renderCart(){
+  const container = document.getElementById('cartItems');
+  container.innerHTML = '';
+  cart.forEach(item=>{
+    const div = document.createElement('div');
+    div.className = 'cart-item';
+    div.innerHTML = `
+      <input type="checkbox" class="cart-checkbox" data-id="${item._id}" checked>
+      <img src="${item.image}" alt="${item.name}">
+      <div class="cart-item-details">
+        <h2>${item.name}</h2>
+        <p>${item.description}</p>
+        <p><b>$${item.price}</b></p>
+      </div>
+      <button data-id="${item._id}"><i data-lucide="trash-2"></i> Remove</button>
+    `;
+    // Checkbox toggle
+    div.querySelector('.cart-checkbox').addEventListener('change', e=>{
+      if(e.target.checked) selectedItems.add(item._id);
+      else selectedItems.delete(item._id);
+      updateSelectAll();
+    });
+    // Remove button
+    div.querySelector('button').addEventListener('click', ()=>{
+      fetch('/api/cart/clear', {method:'POST'})
+        .then(()=>{ cart = cart.filter(i=>i._id!==item._id); selectedItems.delete(item._id); renderCart(); });
+    });
+    container.appendChild(div);
+  });
+  lucide.createIcons();
+}
+
+// SELECT ALL
+document.getElementById('selectAll').addEventListener('change', e=>{
+  if(e.target.checked){
+    cart.forEach(i=>selectedItems.add(i._id));
+  } else selectedItems.clear();
+  renderCart();
+});
+
+function updateSelectAll(){
+  const allSelected = cart.every(i=>selectedItems.has(i._id));
+  document.getElementById('selectAll').checked = allSelected;
+}
+
+// CHECKOUT
+document.getElementById('checkoutBtn').addEventListener('click', ()=>{
+  if(selectedItems.size===0) return alert("Select at least one item to checkout!");
+  const selected = cart.filter(i=>selectedItems.has(i._id));
+  // Simulate checkout (replace with PayPal API later)
+  alert("Checking out:\n" + selected.map(i=>`${i.name} ($${i.price})`).join("\n"));
+});
+
+loadCart();
+</script>
+</body>
+</html>
