@@ -62,20 +62,26 @@
     /* ===== FADE ANIMATION ===== */
     .fade { transition: all 0.5s ease; opacity:0; transform:translateY(30px); }
 
-    /* ===== MOBILE RESPONSIVE ===== */
+    /* ===== MOBILE RESPONSIVE (IMPROVED) ===== */
     @media (max-width: 768px) {
-      .navbar { flex-direction: column; align-items: flex-start; padding: 10px 20px; border-radius: 0 0 10px 10px; }
-      .navbar .nav-links { display: flex; flex-wrap: wrap; width: 100%; margin-top: 10px; gap: 10px; }
-      .navbar .nav-links a, .navbar .nav-links button { margin-left: 0; flex: 1 1 45%; text-align: center; }
-      .hero { padding:120px 20px 40px; }
-      .hero h1 { font-size:2em; }
-      .hero p { font-size:1em; }
-      .hero .hero-btn { padding:10px 20px; font-size:0.95em; }
-      .cards-container { flex-direction: column; align-items: center; padding: 30px 10px; gap: 15px; }
-      .card { width: 90%; }
-      .modal-content { max-width: 90%; padding: 15px; }
+      body { font-size: 4vw; }
+      .navbar { flex-direction: column; align-items: center; padding: 10px 5vw; }
+      .navbar .nav-links { width: 100%; flex-wrap: wrap; justify-content: center; gap: 5vw; }
+      .navbar .nav-links a, .navbar .nav-links button { flex: 1 1 40%; font-size: 3vw; }
+
+      .hero { padding: 20vh 5vw 10vh; }
+      .hero h1 { font-size: 8vw; }
+      .hero p { font-size: 4vw; }
+      .hero .hero-btn { padding: 3vw 6vw; font-size: 4vw; }
+
+      .cards-container { padding: 10vh 5vw; gap: 5vw; }
+      .card { width: 90%; padding: 4vw; }
+      .card h2 { font-size: 4vw; }
+      .card p { font-size: 3.5vw; }
+      .card button { font-size: 3.5vw; padding: 2vw 4vw; }
+
+      .modal-content { width: 90%; padding: 5vw; }
       #cartSidebar { width: 90%; right: -100%; }
-      #cartSidebar.show { right: 0; }
     }
   </style>
 </head>
@@ -122,36 +128,47 @@
   <script>
     lucide.createIcons();
 
-    // ===== SCROLL TO CARDS =====
     function scrollToCards() {
       document.getElementById('products').scrollIntoView({behavior: 'smooth'});
     }
 
-    // ===== LOAD PRODUCTS =====
     document.addEventListener('DOMContentLoaded', () => {
+      const container = document.getElementById('products');
+
       fetch('/api/items')
         .then(res => res.json())
         .then(items => {
-          const container = document.querySelector('.cards-container');
           container.innerHTML = '';
+
           items.forEach(item => {
             const card = document.createElement('div');
             card.classList.add('card', 'fade');
-            card.innerHTML = `
-              <img src="${item.image}" alt="${item.name}">
-              <h2>${item.name}</h2>
-              <p>${item.description}</p>
-              <p><b>$${item.price}</b></p>
-              <button onclick="openModal('${item._id}', '${item.image}', '${item.name}', '${item.description}', ${item.price})">
-                <i data-lucide="eye"></i> View
-              </button>`;
+
+            const img = document.createElement('img');
+            img.src = item.image;
+            img.alt = item.name;
+
+            const title = document.createElement('h2');
+            title.innerText = item.name;
+
+            const desc = document.createElement('p');
+            desc.innerText = item.description;
+
+            const price = document.createElement('p');
+            price.innerHTML = `<b>$${item.price}</b>`;
+
+            const btn = document.createElement('button');
+            btn.innerHTML = `<i data-lucide="eye"></i> View`;
+            btn.addEventListener('click', () => openModal(item._id, item.image, item.name, item.description, item.price));
+
+            card.append(img, title, desc, price, btn);
             container.appendChild(card);
           });
+
           lucide.createIcons();
         });
     });
 
-    // ===== MODAL =====
     function openModal(id, img, title, desc, price) {
       document.getElementById('modalImage').src = img;
       document.getElementById('modalTitle').innerText = title;
@@ -161,11 +178,8 @@
       document.getElementById('modalAddBtn').onclick = () => addToCart(id);
     }
 
-    function closeModal() {
-      document.getElementById('productModal').style.display = 'none';
-    }
+    function closeModal() { document.getElementById('productModal').style.display = 'none'; }
 
-    // ===== CART =====
     function addToCart(id) {
       fetch('/api/cart/add', {
         method: 'POST',
@@ -173,47 +187,6 @@
         body: JSON.stringify({id})
       }).then(() => alert('Item added to cart!'));
     }
-
-    // ===== FADE ANIMATIONS =====
-    const isMobile = /Mobi|Android/i.test(navigator.userAgent);
-    if (!isMobile) {
-      const observer = new IntersectionObserver(entries => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) entry.target.classList.remove('fade');
-          else entry.target.classList.add('fade');
-        });
-      }, { threshold: 0.2 });
-      document.querySelectorAll('.fade').forEach(el => observer.observe(el));
-    }
-
-    // ===== DYNAMIC MOBILE SCALING =====
-    function adjustForScreen() {
-      const w = window.innerWidth;
-      const heroTitle = document.querySelector('.hero h1');
-      const heroText = document.querySelector('.hero p');
-      const heroBtn = document.querySelector('.hero .hero-btn');
-
-      if (w < 500) {
-        heroTitle.style.fontSize = '1.6em';
-        heroText.style.fontSize = '0.9em';
-        heroBtn.style.padding = '8px 15px';
-        heroBtn.style.fontSize = '0.85em';
-      } else if (w < 768) {
-        heroTitle.style.fontSize = '2em';
-        heroText.style.fontSize = '1em';
-        heroBtn.style.padding = '10px 20px';
-        heroBtn.style.fontSize = '0.95em';
-      }
-
-      document.querySelectorAll('.card').forEach(card => {
-        if (w < 500) card.style.width = '95%';
-        else if (w < 768) card.style.width = '90%';
-        else card.style.width = '250px';
-      });
-    }
-
-    adjustForScreen();
-    window.addEventListener('resize', adjustForScreen);
   </script>
 </body>
 </html>
