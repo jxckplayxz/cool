@@ -1,95 +1,215 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CardsLawp | Cart</title>
-<script src="https://unpkg.com/lucide@latest"></script>
-<style>
-  * { margin:0; padding:0; box-sizing:border-box; font-family: 'Arial', sans-serif; }
-  body { background:#f0f2f5; color:#333; }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your Cart | CardsLawp</title>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f2f5;
+      color: #333;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+    }
+    h1 {
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+    }
+    .cart-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 15px;
+    }
+    .cart-item {
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 15px;
+      width: 90%;
+      max-width: 400px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+    .cart-item img {
+      width: 100%;
+      max-width: 300px;
+      border-radius: 10px;
+    }
+    .cart-item h2 {
+      font-size: 18px;
+      margin: 10px 0 5px;
+    }
+    .cart-item p {
+      font-size: 16px;
+      margin: 5px 0;
+    }
+    .cart-item input[type="checkbox"] {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      transform: scale(1.5);
+    }
+    .remove-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #d9534f;
+    }
+    .remove-btn:hover {
+      color: #b52b27;
+    }
+    .total {
+      margin-top: 30px;
+      font-size: 20px;
+      font-weight: bold;
+    }
+    .select-all {
+      margin: 15px 0;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    button {
+      background: #0070ba;
+      color: white;
+      border: none;
+      padding: 12px 25px;
+      border-radius: 8px;
+      font-size: 18px;
+      cursor: pointer;
+      margin-top: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    button:hover {
+      background: #005a9e;
+    }
 
-  .navbar {
-    display:flex; justify-content:space-between; align-items:center;
-    padding:10px 30px; background:rgba(255,255,255,0.15); backdrop-filter:blur(10px);
-    border-radius:0 0 15px 15px; box-shadow:0 4px 6px rgba(0,0,0,0.1); z-index:1000;
-  }
-  .navbar .logo { font-size:1.5em; font-weight:bold; color:#fff; }
-  .navbar .nav-links a { margin-left:20px; padding:8px 15px; border:none; background:rgba(255,255,255,0.25);
-    color:#fff; border-radius:10px; cursor:pointer; text-decoration:none; transition:0.3s; }
-  .navbar .nav-links a:hover, .navbar .nav-links a.active { background:rgba(255,255,255,0.45); }
-
-  .cart-container { max-width:800px; margin:100px auto 50px; padding:0 20px; }
-  .cart-item { display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; background:#fff; padding:10px; border-radius:10px; box-shadow:0 4px 8px rgba(0,0,0,0.1); }
-  .cart-item img { width:60px; height:60px; border-radius:10px; margin-right:10px; }
-  .cart-item-details { flex:1; }
-  .cart-item-details h3 { margin-bottom:5px; }
-  .cart-item-details p { margin-bottom:0; }
-  .cart-item button { padding:5px 10px; border:none; border-radius:8px; background:#f44336; color:#fff; cursor:pointer; }
-  .cart-item button:hover { background:#d32f2f; }
-
-  #checkoutBtn { width:100%; padding:12px; border:none; border-radius:12px; background:#667eea; color:#fff; margin-top:20px; cursor:pointer; }
-  #checkoutBtn:hover { background:#764ba2; }
-
-  /* MOBILE RESPONSIVE */
-  @media (max-width:768px){
-    body{font-size:4vw;}
-    .navbar{flex-direction:column;align-items:center;padding:10px 5vw;}
-    .navbar .nav-links{width:100%;display:flex;justify-content:center;gap:5vw;}
-    .navbar .nav-links a{flex:1 1 40%;font-size:3vw;}
-    .cart-container{margin:80px 5vw 50px;}
-    .cart-item{flex-direction:column; align-items:flex-start;}
-    .cart-item img{margin-bottom:5px;}
-    .cart-item-details{width:100%;}
-  }
-</style>
+    /* ===== MOBILE ===== */
+    @media (max-width: 768px) {
+      body { font-size: 4vw; }
+      .cart-item { width: 95%; }
+      .cart-item h2 { font-size: 5vw; }
+      .cart-item p { font-size: 4vw; }
+      button { font-size: 4vw; padding: 3vw 6vw; }
+      .total { font-size: 5vw; }
+    }
+  </style>
 </head>
 <body>
-  <div class="navbar">
-    <div class="logo"><i data-lucide="credit-card"></i> CardsLawp</div>
-    <div class="nav-links">
-      <a href="/" ><i data-lucide="home"></i> Home</a>
-      <a href="/cart" class="active"><i data-lucide="shopping-cart"></i> Cart</a>
-      <a href="/login"><i data-lucide="user"></i> Login</a>
-    </div>
+  <h1><i data-lucide="shopping-cart"></i> Your Cart</h1>
+
+  <div class="select-all">
+    <i data-lucide="check-square"></i>
+    <label><input type="checkbox" id="selectAll"> Select All</label>
   </div>
 
-  <div class="cart-container" id="cartContainer"></div>
-  <button id="checkoutBtn"><i data-lucide="credit-card"></i> Pay with PayPal</button>
+  <div class="cart-container" id="cartItems"></div>
+  <div class="total" id="cartTotal">Total: $0</div>
 
-<script>
-lucide.createIcons();
+  <button id="checkoutBtn">
+    <i data-lucide="credit-card"></i> Pay with PayPal
+  </button>
 
-function loadCart() {
-  const container = document.getElementById('cartContainer');
-  fetch('/api/cart')
-    .then(res=>res.json())
-    .then(cart=>{
-      container.innerHTML='';
-      if(cart.length===0){ container.innerHTML='<p>Your cart is empty.</p>'; return; }
+  <script>
+    // Example cart data (replace with localStorage items later)
+    let cart = JSON.parse(localStorage.getItem("cart")) || [
+      { name: "Amazon Gift Card", price: 50, img: "https://via.placeholder.com/300x150" },
+      { name: "Roblox Gift Card", price: 25, img: "https://via.placeholder.com/300x150" },
+      { name: "Netflix Gift Card", price: 30, img: "https://via.placeholder.com/300x150" }
+    ];
 
-      cart.forEach(item=>{
-        const div = document.createElement('div');
-        div.classList.add('cart-item');
+    const cartContainer = document.getElementById("cartItems");
+    const totalDisplay = document.getElementById("cartTotal");
+    const checkoutBtn = document.getElementById("checkoutBtn");
+    const selectAllBox = document.getElementById("selectAll");
 
-        const img = document.createElement('img'); img.src=item.image; img.alt=item.name;
-        const details = document.createElement('div'); details.classList.add('cart-item-details');
-        const h3 = document.createElement('h3'); h3.innerText=item.name;
-        const p = document.createElement('p'); p.innerHTML=`<b>$${item.price}</b>`;
-        details.append(h3,p);
-
-        const btn = document.createElement('button'); btn.innerText='Remove';
-        btn.addEventListener('click', ()=>{
-          fetch('/api/cart/clear',{method:'POST'}).then(loadCart);
-        });
-
-        div.append(img,details,btn);
-        container.appendChild(div);
+    // Render cart items
+    function renderCart() {
+      cartContainer.innerHTML = "";
+      cart.forEach((item, index) => {
+        const div = document.createElement("div");
+        div.className = "cart-item";
+        div.innerHTML = `
+          <input type="checkbox" class="item-checkbox" data-index="${index}">
+          <button class="remove-btn" data-index="${index}" title="Remove">
+            <i data-lucide="trash-2"></i>
+          </button>
+          <img src="${item.img}" alt="${item.name}">
+          <h2>${item.name}</h2>
+          <p>Price: $${item.price}</p>
+        `;
+        cartContainer.appendChild(div);
       });
-    });
-}
+      lucide.createIcons();
+    }
 
-document.addEventListener('DOMContentLoaded', loadCart);
-</script>
+    // Calculate total based on selected items
+    function updateTotal() {
+      const checkboxes = document.querySelectorAll(".item-checkbox");
+      let total = 0;
+      checkboxes.forEach((box, i) => {
+        if (box.checked) total += cart[i].price;
+      });
+      totalDisplay.textContent = `Total: $${total}`;
+      return total;
+    }
+
+    // Handle checkbox + select all
+    document.addEventListener("change", e => {
+      if (e.target.classList.contains("item-checkbox")) updateTotal();
+      if (e.target.id === "selectAll") {
+        const checked = e.target.checked;
+        document.querySelectorAll(".item-checkbox").forEach(box => box.checked = checked);
+        updateTotal();
+      }
+    });
+
+    // Remove item
+    document.addEventListener("click", e => {
+      if (e.target.closest(".remove-btn")) {
+        const index = e.target.closest(".remove-btn").dataset.index;
+        cart.splice(index, 1);
+        localStorage.setItem("cart", JSON.stringify(cart));
+        renderCart();
+        updateTotal();
+      }
+    });
+
+    // PayPal checkout
+    checkoutBtn.addEventListener("click", () => {
+      const selectedItems = cart.filter((_, i) => document.querySelectorAll(".item-checkbox")[i].checked);
+      if (selectedItems.length === 0) {
+        alert("Please select at least one item to pay for.");
+        return;
+      }
+
+      const paypalEmail = "zxueondrugz@gmail.com"; // your PayPal email
+      const itemsNote = encodeURIComponent(selectedItems.map(i => i.name).join(", "));
+      const amount = selectedItems.reduce((sum, i) => sum + i.price, 0);
+      const url = `https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=${paypalEmail}&item_name=${itemsNote}&amount=${amount}&currency_code=USD`;
+      window.open(url, "_blank");
+    });
+
+    // Initial render
+    renderCart();
+  </script>
 </body>
 </html>
