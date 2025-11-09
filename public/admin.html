@@ -4,24 +4,23 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin Panel | CardsLawp</title>
-<link rel="stylesheet" href="/style.css">
 <script src="https://unpkg.com/lucide@latest"></script>
 <style>
-  body { font-family: Arial, sans-serif; background:#f0f2f5; padding:20px; }
-  h1 { text-align:center; margin-bottom:20px; }
-  form { max-width:500px; margin:0 auto 30px auto; background:#fff; padding:20px; border-radius:15px; box-shadow:0 8px 16px rgba(0,0,0,0.1); display:flex; flex-direction:column; gap:10px; }
-  input { padding:10px; border-radius:10px; border:1px solid #ccc; width:100%; }
-  button { padding:12px; border:none; border-radius:12px; background:#667eea; color:#fff; cursor:pointer; transition:0.3s; }
-  button:hover { background:#764ba2; }
-  .logout-btn { background:#f44336; margin-top:10px; }
-  .logout-btn:hover { background:#d32f2f; }
-  .preview-container { display:flex; flex-wrap:wrap; gap:20px; justify-content:center; }
-  .card { background:#fff; border-radius:15px; padding:15px; width:200px; text-align:center; box-shadow:0 8px 16px rgba(0,0,0,0.1); position:relative; }
-  .card img { width:100%; border-radius:10px; margin-bottom:10px; }
-  .card h2 { font-size:1.1em; margin-bottom:5px; }
-  .card p { font-size:0.9em; margin-bottom:10px; }
-  .card button { padding:5px 10px; font-size:0.8em; background:#f44336; color:#fff; border-radius:8px; cursor:pointer; border:none; position:absolute; top:10px; right:10px; }
-  .card button:hover { background:#d32f2f; }
+body { font-family: Arial, sans-serif; background:#f0f2f5; padding:20px; }
+h1 { text-align:center; margin-bottom:20px; }
+form { max-width:500px; margin:0 auto 30px auto; background:#fff; padding:20px; border-radius:15px; box-shadow:0 8px 16px rgba(0,0,0,0.1); display:flex; flex-direction:column; gap:10px; }
+input { padding:10px; border-radius:10px; border:1px solid #ccc; width:100%; }
+button { padding:12px; border:none; border-radius:12px; background:#667eea; color:#fff; cursor:pointer; transition:0.3s; }
+button:hover { background:#764ba2; }
+.logout-btn { background:#f44336; margin-top:10px; }
+.logout-btn:hover { background:#d32f2f; }
+.preview-container { display:flex; flex-wrap:wrap; gap:20px; justify-content:center; }
+.card { background:#fff; border-radius:15px; padding:15px; width:200px; text-align:center; box-shadow:0 8px 16px rgba(0,0,0,0.1); position:relative; }
+.card img { width:100%; border-radius:10px; margin-bottom:10px; }
+.card h2 { font-size:1.1em; margin-bottom:5px; }
+.card p { font-size:0.9em; margin-bottom:10px; }
+.card button { padding:5px 10px; font-size:0.8em; background:#f44336; color:#fff; border-radius:8px; cursor:pointer; border:none; position:absolute; top:10px; right:10px; }
+.card button:hover { background:#d32f2f; }
 </style>
 </head>
 <body>
@@ -34,85 +33,74 @@
   <input type="number" id="price" placeholder="Price" required>
   <input type="text" id="image" placeholder="Image URL" required>
   <button type="submit"><i data-lucide="plus-circle"></i> Add Item</button>
-  <button type="button" class="logout-btn" onclick="logout()"><i data-lucide="log-out"></i> Logout</button>
+  <button type="button" class="logout-btn" onclick="window.location='/'"><i data-lucide="log-out"></i> Logout</button>
 </form>
 
-<div class="preview-container" id="previewContainer">
-  <!-- Live preview of items -->
-</div>
+<div class="preview-container" id="previewContainer"></div>
 
 <script>
-  lucide.createIcons();
+lucide.createIcons();
 
-  const form = document.getElementById('addItemForm');
-  const previewContainer = document.getElementById('previewContainer');
+const form = document.getElementById('addItemForm');
+const previewContainer = document.getElementById('previewContainer');
 
-  // Fetch and display items
-  function loadItems() {
-    fetch('/api/items')
-      .then(res => res.json())
-      .then(items => {
-        previewContainer.innerHTML = '';
-        items.forEach(item => {
-          const card = document.createElement('div');
-          card.classList.add('card');
-          card.innerHTML = `
-            <img src="${item.image}" alt="${item.name}">
-            <h2>${item.name}</h2>
-            <p>${item.description}</p>
-            <p><b>$${item.price}</b></p>
-            <button onclick="deleteItem('${item._id}')"><i data-lucide="trash-2"></i></button>`;
-          previewContainer.appendChild(card);
-        });
-        lucide.createIcons();
+function loadItems() {
+  fetch('/api/items')
+    .then(res => res.json())
+    .then(items => {
+      previewContainer.innerHTML = '';
+      items.forEach(item => {
+        const card = document.createElement('div');
+        card.classList.add('card');
+        card.innerHTML = `
+          <img src="${item.image}" alt="${item.name}">
+          <h2>${item.name}</h2>
+          <p>${item.description}</p>
+          <p><b>$${item.price}</b></p>
+          <button onclick="deleteItem('${item._id}')"><i data-lucide="trash-2"></i></button>`;
+        previewContainer.appendChild(card);
       });
-  }
+      lucide.createIcons();
+    });
+}
 
-  // Add new item
-  form.addEventListener('submit', e => {
-    e.preventDefault();
-    const data = {
-      name: document.getElementById('name').value,
-      description: document.getElementById('description').value,
-      price: document.getElementById('price').value,
-      image: document.getElementById('image').value
-    };
-    fetch('/api/items/add', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify(data)
-    }).then(res => res.json())
-      .then(resp => {
-        if(resp.success) {
-          alert('Item added!');
-          form.reset();
-          loadItems();
-        } else {
-          alert('Error adding item');
-        }
-      });
-  });
+form.addEventListener('submit', e => {
+  e.preventDefault();
+  const data = {
+    name: document.getElementById('name').value,
+    description: document.getElementById('description').value,
+    price: document.getElementById('price').value,
+    image: document.getElementById('image').value
+  };
+  fetch('/api/items/add', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(data)
+  }).then(res => res.json())
+    .then(resp => {
+      if(resp.success) {
+        alert('Item added!');
+        form.reset();
+        loadItems();
+      } else alert(resp.error || 'Error adding item');
+    });
+});
 
-  // Delete item
-  function deleteItem(id) {
-    fetch('/api/items/delete', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ id })
-    }).then(res => res.json())
-      .then(resp => {
-        if(resp.success) loadItems();
-        else alert('Error deleting item');
-      });
-  }
+function deleteItem(id) {
+  fetch('/api/items/delete', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({id})
+  }).then(res => res.json())
+    .then(resp => {
+      if(resp.success) loadItems();
+      else alert('Error deleting item');
+    });
+}
 
-  // Logout
-  function logout() {
-    fetch('/admin-logout').then(() => window.location='/');
-  }
-
-  // Initial load
-  loadItems();
+// Initial load
+loadItems();
 </script>
+
 </body>
 </html>
