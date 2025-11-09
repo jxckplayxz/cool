@@ -1,115 +1,120 @@
 import express from "express";
-import session from "express-session";
-import bodyParser from "body-parser";
+import fs from "fs";
 import path from "path";
-import { fileURLToPath } from "url";
+import bodyParser from "body-parser";
+import paypal from "@paypal/checkout-server-sdk";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 const app = express();
+const PORT = process.env.PORT || 3000;
+const __dirname = path.resolve();
 
-// Static folder
-app.use(express.static(path.join(__dirname, "public")));
-
-// Body parsers
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.static("public"));
 app.use(bodyParser.json());
 
-// Session
-app.use(
-  session({
-    secret: "cardslawp_secret",
-    resave: false,
-    saveUninitialized: true,
-    cookie: { maxAge: 1000 * 60 * 60 } // 1 hour
-  })
+const productsPath = path.join(__dirname, "products.json");
+const ordersPath = path.join(__dirname, "orders.json");
+if (!fs.existsSync(productsPath)) fs.writeFileSync(productsPath, "[]");
+if (!fs.existsSync(ordersPath)) fs.writeFileSync(ordersPath, "[]");
+
+// ✅ PayPal setup
+const Environment =
+  process.env.NODE_ENV === "production"
+    ? paypal.core.LiveEnvironment
+    : paypal.core.SandboxEnvironment;
+
+const paypalClient = new paypal.core.PayPalHttpClient(
+  new Environment(
+    process.env.PAYPAL_CLIENT_ID || "YOUR_SANDBOX_CLIENT_ID",
+    process.env.PAYPAL_SECRET || "YOUR_SANDBOX_SECRET"
+  )
 );
 
-// Temporary in-memory DB
-let giftCards = [];
-let giftRequests = [];
-
-// Home page
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
+// 🛍️ Get products
+app.get("/api/products", (req, res) => {
+  const products = JSON.parse(fs.readFileSync(productsPath));
+  res.json(products);
 });
 
-// Admin page
-app.get("/admin", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "admin.html"));
-});
-
-// Get all cards
-app.get("/api/cards", (req, res) => {
-  res.json(giftCards);
-});
-
-// Submit gift card request (non-admin)
-app.post("/api/request", (req, res) => {
-  const { name, image, description } = req.body;
-  if (!name || !image || !description)
-    return res.status(400).json({ error: "Missing fields" });
-
-  giftRequests.push({ id: Date.now(), name, image, description, approved: false });
-  res.json({ message: "Request submitted for admin approval" });
-});
-
-// Admin login
+// 🔑 Admin login
 app.post("/api/login", (req, res) => {
   const { email, password } = req.body;
-  if (email === "admin.cardslawp.com" && password === "admin123") {
-    req.session.admin = true;
-    return res.json({ success: true });
+  if (email === "admin@cardslawp.com" && password === "admin123") {
+    return res.json({ success: true, admin: true });
   }
-  res.json({ success: false, message: "Invalid login" });
+  res.json({ success: true, admin: false });
 });
 
-// Optional: logout route
-app.get("/api/logout", (req, res) => {
-  req.session.destroy(err => {
-    if (err) return res.status(500).json({ message: "Logout failed" });
-    res.json({ message: "Logged out" });
+// 🛒 Add item (admin only)
+app.post("/api/add-item", (req, res) => {
+  const { email, name, image, desc, price } = req.body;
+  if (email !== "admin@cardslawp.com") return res.status(403).json({ error: "Unauthorized" });
+
+  const products = JSON.parse(fs.readFileSync(productsPath));
+  products.push({ name, image, desc, price });
+  fs.writeFileSync(productsPath, JSON.stringify(products, null, 2));
+  res.json({ success: true });
+});
+
+// 💸 Create PayPal order
+app.post("/api/create-order", async (req, res) => {
+  const { cart, buyerEmail } = req.body;
+  const total = cart.reduce((sum, item) => sum + Number(item.price), 0);
+
+  const request = new paypal.orders.OrdersCreateRequest();
+  request.prefer("return=representation");
+  request.requestBody({
+    intent: "CAPTURE",
+    purchase_units: [
+      {
+        amount: {
+          currency_code: "USD",
+          value: total.toFixed(2),
+        },
+        payee: {
+          email_address: "zxueondrugz@gmail.com", // your receiving PayPal email
+        },
+      },
+    ],
   });
+
+  try {
+    const order = await paypalClient.execute(request);
+    res.json({ id: order.result.id });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Error creating order");
+  }
 });
 
-// Admin adds approved card
-app.post("/api/admin/add", (req, res) => {
-  if (!req.session.admin) return res.status(403).json({ error: "Unauthorized" });
+// ✅ Capture payment and log purchase
+app.post("/api/capture-order", async (req, res) => {
+  const { orderID, buyerEmail, cart } = req.body;
 
-  const { name, image, description } = req.body;
-  if (!name || !image || !description)
-    return res.status(400).json({ error: "Missing fields" });
+  try {
+    const captureRequest = new paypal.orders.OrdersCaptureRequest(orderID);
+    captureRequest.requestBody({});
+    const capture = await paypalClient.execute(captureRequest);
 
-  giftCards.push({ id: Date.now(), name, image, description });
-  res.json({ message: "Gift card added!" });
+    const orders = JSON.parse(fs.readFileSync(ordersPath));
+    orders.push({
+      buyerEmail,
+      cart,
+      date: new Date().toISOString(),
+      status: "Completed",
+    });
+    fs.writeFileSync(ordersPath, JSON.stringify(orders, null, 2));
+
+    res.json({ success: true, message: "Purchase recorded!" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Error capturing order");
+  }
 });
 
-// Admin view requests
-app.get("/api/admin/requests", (req, res) => {
-  if (!req.session.admin) return res.status(403).json({ error: "Unauthorized" });
-  res.json(giftRequests);
+// 📋 Admin check purchases
+app.get("/api/orders", (req, res) => {
+  const orders = JSON.parse(fs.readFileSync(ordersPath));
+  res.json(orders);
 });
 
-// Approve request
-app.post("/api/admin/approve/:id", (req, res) => {
-  if (!req.session.admin) return res.status(403).json({ error: "Unauthorized" });
-
-  const reqId = parseInt(req.params.id);
-  const request = giftRequests.find(r => r.id === reqId);
-  if (!request) return res.status(404).json({ error: "Request not found" });
-
-  request.approved = true;
-  giftCards.push({ id: Date.now(), name: request.name, image: request.image, description: request.description });
-  res.json({ message: "Request approved!" });
-});
-
-// Deny request
-app.post("/api/admin/deny/:id", (req, res) => {
-  if (!req.session.admin) return res.status(403).json({ error: "Unauthorized" });
-  giftRequests = giftRequests.filter(r => r.id !== parseInt(req.params.id));
-  res.json({ message: "Request denied and removed" });
-});
-
-// Start server
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`CardsLawp running on port ${PORT}`));
+app.listen(PORT, () => console.log(`✅ CardsLawp server running on ${PORT}`));
