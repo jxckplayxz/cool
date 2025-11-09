@@ -1,9 +1,9 @@
 [
   {
     "_id": "1700000000000",
-    "name": "Amazon $50",
+    "name": "test",
     "description": "Digital gift card",
-    "price": 50,
+    "price": 0,
     "image": "https://link-to-image.com/amazon50.png"
   }
 ]
