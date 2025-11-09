@@ -62,29 +62,23 @@ body { background:#f0f2f5; color:#333; }
 
 /* ===== MOBILE RESPONSIVE ===== */
 @media (max-width: 768px) {
-  /* Navbar */
   .navbar { flex-direction: column; align-items: flex-start; padding: 10px 20px; border-radius: 0 0 10px 10px; }
   .navbar .nav-links { display: flex; flex-wrap: wrap; width: 100%; margin-top: 10px; gap: 10px; }
   .navbar .nav-links a, .navbar .nav-links button { margin-left: 0; flex: 1 1 45%; text-align: center; }
 
-  /* Hero */
   .hero { padding:120px 20px 40px; }
   .hero h1 { font-size:2em; }
   .hero p { font-size:1em; }
-  .hero .hero-btn { padding:10px 20px; font-size:0.9em; }
+  .hero .hero-btn { padding:10px 20px; font-size:0.95em; }
 
-  /* Cards */
   .cards-container { flex-direction: column; align-items: center; padding: 30px 10px; gap: 15px; }
   .card { width: 90%; }
 
-  /* Suggest Form */
   .suggest { width: 90%; margin: 30px auto; }
   .suggest input, .suggest textarea { width: 100%; }
 
-  /* Modal */
   .modal-content { max-width: 90%; padding: 15px; }
 
-  /* Cart Sidebar */
   #cartSidebar { width: 90%; right: -100%; }
   #cartSidebar.show { right: 0; }
 }
