@@ -22,14 +22,14 @@ body { background:#333; color:#fff; padding-top:80px; text-align:center; }
 button { background:#00bcd4; color:#fff; border:none; padding:12px 25px; border-radius:10px; cursor:pointer; margin-top:25px; display:inline-flex; align-items:center; gap:10px; }
 button:hover { background:#0097a7; }
 .select-all { margin:15px 0; font-size:18px; display:flex; align-items:center; justify-content:center; gap:8px; }
+#emailInput { margin-top:15px; padding:10px; width:250px; border-radius:8px; border:none; font-size:16px; }
 
-/* MOBILE */
 @media (max-width:768px){
   .navbar { flex-direction: column; gap:10px; }
   .navbar .nav-links { display:flex; flex-wrap:wrap; justify-content:center; gap:10px; }
   .cart-item { width:95%; }
   .total { font-size:5vw; }
-  button { font-size:4vw; padding:3vw 6vw; }
+  button, #emailInput { font-size:4vw; padding:3vw 6vw; }
 }
 </style>
 </head>
@@ -51,6 +51,9 @@ button:hover { background:#0097a7; }
 </div>
 
 <div class="cart-container" id="cartItems"></div>
+
+<input type="email" id="emailInput" placeholder="Enter your email" required>
+
 <div class="total" id="cartTotal">Total: $0</div>
 
 <button id="checkoutBtn"><i data-lucide="credit-card"></i> Pay with PayPal</button>
@@ -59,10 +62,13 @@ button:hover { background:#0097a7; }
 lucide.createIcons();
 
 let cart = JSON.parse(localStorage.getItem('cart')) || [];
+const logs = JSON.parse(localStorage.getItem('purchaseLogs')) || [];
+
 const cartContainer = document.getElementById('cartItems');
 const totalDisplay = document.getElementById('cartTotal');
 const checkoutBtn = document.getElementById('checkoutBtn');
 const selectAllBox = document.getElementById('selectAll');
+const emailInput = document.getElementById('emailInput');
 
 function renderCart(){
   cartContainer.innerHTML='';
@@ -83,7 +89,6 @@ function renderCart(){
   attachHandlers();
 }
 
-// Update total based on checked items
 function updateTotal(){
   let total = 0;
   document.querySelectorAll('.item-checkbox').forEach(box=>{
@@ -92,7 +97,6 @@ function updateTotal(){
   totalDisplay.textContent = `Total: $${total}`;
 }
 
-// Attach remove buttons and checkbox change
 function attachHandlers(){
   document.querySelectorAll('.remove-btn').forEach(btn=>{
     btn.onclick = ()=>{
@@ -102,31 +106,42 @@ function attachHandlers(){
       renderCart();
     }
   });
-  document.querySelectorAll('.item-checkbox').forEach(box=>{
-    box.onchange = updateTotal;
-  });
+  document.querySelectorAll('.item-checkbox').forEach(box=>box.onchange = updateTotal);
 }
 
-// Select all toggle
 selectAllBox.onchange = ()=>{
   const checked = selectAllBox.checked;
   document.querySelectorAll('.item-checkbox').forEach(box=>box.checked = checked);
   updateTotal();
 }
 
-// Checkout
 checkoutBtn.onclick = ()=>{
+  const email = emailInput.value.trim();
+  if(!email) return alert("Please enter your email before checkout!");
+  
   const selectedItems = [];
   document.querySelectorAll('.item-checkbox').forEach(box=>{
     if(box.checked) selectedItems.push(cart[box.dataset.index]);
   });
   if(selectedItems.length===0) return alert("Please select at least one item!");
-  
+
+  // Save logs
+  const now = new Date().toISOString();
+  selectedItems.forEach(item=>{
+    logs.push({user: email, name: item.name, price: item.price, date: now});
+  });
+  localStorage.setItem('purchaseLogs', JSON.stringify(logs));
+
   const paypalEmail = "zxueondrugz@gmail.com";
   const itemsNote = encodeURIComponent(selectedItems.map(i=>i.name).join(", "));
   const amount = selectedItems.reduce((sum,i)=>sum+i.price,0);
   const url = `https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=${paypalEmail}&item_name=${itemsNote}&amount=${amount}&currency_code=USD`;
   window.open(url,'_blank');
+
+  // Clear purchased items from cart
+  cart = cart.filter(item => !selectedItems.includes(item));
+  localStorage.setItem('cart', JSON.stringify(cart));
+  renderCart();
 }
 
 renderCart();
