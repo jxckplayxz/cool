@@ -1,124 +1,81 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>CardsLawp</title>
-  <link rel="stylesheet" href="styles.css">
-  <script src="https://www.paypal.com/sdk/js?client-id=YOUR_SANDBOX_CLIENT_ID&currency=USD"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CardsLawp - Gift Cards</title>
+    <link rel="stylesheet" href="/style.css">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
-  <header class="navbar glassy">
-    <h1>CardsLawp</h1>
-    <nav>
-      <button id="loginBtn" class="cta">Login</button>
-      <button id="viewCart" class="cta">Cart</button>
-    </nav>
-  </header>
+    <header class="navbar glassy">
+        <div class="logo-area">
+            <h1><i data-lucide="credit-card"></i> CardsLawp</h1>
+        </div>
+        <nav>
+            <a href="/"><i data-lucide="home"></i> Home</a>
+            <a href="/cart"><i data-lucide="shopping-cart"></i> Cart</a>
+            <a href="/login"><i data-lucide="user"></i> Login</a>
+        </nav>
+    </header>
 
-  <main>
-    <section id="productsContainer" class="product-grid"></section>
-  </main>
+    <section id="products" class="fade-section">
+        <h2><i data-lucide="gift"></i> Available Gift Cards</h2>
+        <div class="product-grid" id="product-grid"></div>
+    </section>
 
-  <!-- Login Modal -->
-  <div class="modal" id="loginModal">
-    <div class="modal-content">
-      <h3>Login</h3>
-      <input id="loginEmail" placeholder="Email">
-      <input id="loginPass" type="password" placeholder="Password">
-      <button id="loginSubmit" class="cta">Login</button>
-    </div>
-  </div>
+    <footer class="footer glassy">
+        <p><i data-lucide="mail"></i> Contact us: support@cardslawp.com</p>
+        <p><i data-lucide="shield"></i> Secure Checkout • PayPal Verified</p>
+    </footer>
 
-  <!-- Cart Modal -->
-  <div class="modal" id="cartModal">
-    <div class="modal-content">
-      <h3>Your Cart</h3>
-      <div id="cartItems"></div>
-      <input id="buyerEmail" placeholder="Enter your email">
-      <div id="paypal-button-container"></div>
-    </div>
-  </div>
+    <script>
+        // Load products
+        fetch('/api/items')
+            .then(res => res.json())
+            .then(items => {
+                const grid = document.getElementById('product-grid');
+                items.forEach(item => {
+                    const card = document.createElement('div');
+                    card.classList.add('product-card');
+                    card.innerHTML = `
+                        <img src="${item.image}" alt="${item.name}">
+                        <h3><i data-lucide="gift"></i> ${item.name}</h3>
+                        <p>${item.description}</p>
+                        <p class="price">$${item.price}</p>
+                        <button onclick="addToCart('${item._id}')"><i data-lucide="shopping-bag"></i> Add to Cart</button>
+                    `;
+                    grid.appendChild(card);
+                });
+                lucide.createIcons(); // render icons dynamically
+            });
 
-  <script>
-let loggedInEmail = null;
-let cart = [];
+        function addToCart(id) {
+            fetch('/api/cart/add', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({id})
+            }).then(res => res.json()).then(() => alert('Added to cart!'));
+        }
 
-// Load products
-async function loadProducts() {
-  const res = await fetch('/api/products');
-  const products = await res.json();
-  const container = document.getElementById('productsContainer');
-  container.innerHTML = '';
+        // Disable animations on mobile
+        const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+        if (!isMobile) {
+            const observer = new IntersectionObserver(entries => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                    } else {
+                        entry.target.classList.remove('visible');
+                    }
+                });
+            }, {threshold: 0.1});
+            document.querySelectorAll('.fade-section, .product-card').forEach(el => observer.observe(el));
+        }
 
-  products.forEach(p => {
-    const card = document.createElement('div');
-    card.className = 'product';
-    card.innerHTML = `
-      <img src="${p.image}" alt="${p.name}">
-      <h3>${p.name}</h3>
-      <p>${p.desc}</p>
-      <p class="price">$${p.price}</p>
-      <button class="cta">Add to Cart</button>
-    `;
-    card.querySelector('button').addEventListener('click', () => addToCart(p));
-    container.appendChild(card);
-  });
-}
-loadProducts();
-
-function addToCart(p) {
-  cart.push(p);
-  alert(p.name + " added to cart");
-}
-
-document.getElementById('viewCart').addEventListener('click', () => {
-  const cartModal = document.getElementById('cartModal');
-  const itemsDiv = document.getElementById('cartItems');
-  itemsDiv.innerHTML = cart.map(c => `<p>${c.name} - $${c.price}</p>`).join('');
-  cartModal.style.display = 'flex';
-
-  paypal.Buttons({
-    createOrder: async () => {
-      const buyerEmail = document.getElementById('buyerEmail').value;
-      const res = await fetch('/api/create-order', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ cart, buyerEmail })
-      });
-      const data = await res.json();
-      return data.id;
-    },
-    onApprove: async (data) => {
-      const buyerEmail = document.getElementById('buyerEmail').value;
-      await fetch('/api/capture-order', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ orderID: data.orderID, buyerEmail, cart })
-      });
-      alert("Payment successful! Please wait for your gift card in your email.");
-      cart = [];
-      document.getElementById('cartModal').style.display = 'none';
-    }
-  }).render('#paypal-button-container');
-});
-
-document.getElementById('loginBtn').addEventListener('click', () => {
-  document.getElementById('loginModal').style.display = 'flex';
-});
-document.getElementById('loginSubmit').addEventListener('click', async () => {
-  const email = document.getElementById('loginEmail').value;
-  const password = document.getElementById('loginPass').value;
-  const res = await fetch('/api/login', {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ email, password })
-  });
-  const data = await res.json();
-  loggedInEmail = email;
-  alert(`Logged in as ${email}`);
-  if (data.admin) window.location.href = "/admin";
-  document.getElementById('loginModal').style.display = 'none';
-});
-  </script>
+        // Initialize icons
+        lucide.createIcons();
+    </script>
 </body>
 </html>
