@@ -7,112 +7,29 @@
 <script src="https://unpkg.com/lucide@latest"></script>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; font-family:'Arial',sans-serif; }
-
-/* ===== BACKGROUND ANIMATION ===== */
-body {
-  background: linear-gradient(270deg, #667eea, #764ba2, #6b73ff, #000dff);
-  background-size: 800% 800%;
-  animation: gradientMove 12s ease infinite;
-  color: #fff;
-  margin: 0;
-  padding-top: 80px;
-  text-align: center;
-}
-@keyframes gradientMove {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
-/* ===== NAVBAR ===== */
-.navbar {
-  position: fixed;
-  top: 0; left: 0; width: 100%;
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 10px 5vw;
-  background: rgba(0,0,0,0.3);
-  backdrop-filter: blur(12px);
-  box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-  border-radius: 0 0 15px 15px;
-  z-index: 1000;
-}
-.navbar .logo { font-size: 1.5em; font-weight: bold; color: #fff; display: flex; align-items: center; gap: 8px; }
-.navbar .nav-links a {
-  margin-left: 20px; padding: 8px 15px;
-  border: none; background: rgba(255,255,255,0.15);
-  color: #fff; border-radius: 10px;
-  text-decoration: none; transition: 0.3s;
-  display: inline-flex; align-items: center; gap: 6px;
-}
+body { background:#333; color:#fff; padding-top:80px; text-align:center; }
+.navbar { position: fixed; top:0; width:100%; display:flex; justify-content:space-between; align-items:center; padding:10px 5vw; background: rgba(0,0,0,0.5); border-radius:0 0 15px 15px; z-index:1000; }
+.navbar .logo { font-size:1.5em; font-weight:bold; color:#fff; }
+.navbar .nav-links a { margin-left:20px; padding:8px 15px; border:none; background: rgba(255,255,255,0.15); color:#fff; border-radius:10px; text-decoration:none; transition:0.3s; }
 .navbar .nav-links a:hover, .navbar .nav-links a.active { background: rgba(255,255,255,0.35); }
+.cart-container { display:flex; flex-direction:column; align-items:center; gap:15px; padding:20px; }
+.cart-item { background: rgba(255,255,255,0.15); border-radius:15px; padding:20px; width:90%; max-width:400px; display:flex; flex-direction:column; align-items:center; position:relative; }
+.cart-item img { width:100%; border-radius:10px; }
+.cart-item h2 { margin:10px 0 5px; display:flex; align-items:center; gap:6px; }
+.cart-item input[type="checkbox"] { position:absolute; top:10px; left:10px; transform: scale(1.5); }
+.remove-btn { position:absolute; top:10px; right:10px; background:none; border:none; color:#ff5f5f; cursor:pointer; }
+.total { margin-top:25px; font-size:22px; font-weight:bold; }
+button { background:#00bcd4; color:#fff; border:none; padding:12px 25px; border-radius:10px; cursor:pointer; margin-top:25px; display:inline-flex; align-items:center; gap:10px; }
+button:hover { background:#0097a7; }
+.select-all { margin:15px 0; font-size:18px; display:flex; align-items:center; justify-content:center; gap:8px; }
 
-/* ===== CART SECTION ===== */
-h1 {
-  margin-bottom: 15px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 10px;
-}
-.cart-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 15px;
-}
-.cart-item {
-  background: rgba(255,255,255,0.15);
-  border-radius: 15px;
-  padding: 20px;
-  width: 90%;
-  max-width: 400px;
-  box-shadow: 0 6px 12px rgba(0,0,0,0.2);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  position: relative;
-  color: #fff;
-}
-.cart-item img {
-  width: 100%;
-  max-width: 300px;
-  border-radius: 10px;
-}
-.cart-item h2 {
-  font-size: 18px;
-  margin: 10px 0 5px;
-  display: flex; align-items: center; gap: 6px;
-}
-.cart-item p { font-size: 16px; margin: 5px 0; }
-.cart-item input[type="checkbox"] {
-  position: absolute; top: 10px; left: 10px; transform: scale(1.5);
-}
-.remove-btn {
-  position: absolute; top: 10px; right: 10px;
-  background: none; border: none; cursor: pointer; color: #ff5f5f; transition: 0.2s;
-}
-.remove-btn:hover { color: #ff2b2b; }
-
-.select-all { margin: 15px 0; font-size: 18px; display: flex; align-items: center; justify-content: center; gap: 8px; }
-.total { margin-top: 25px; font-size: 22px; font-weight: bold; }
-
-button {
-  background: #00bcd4; color: #fff; border: none;
-  padding: 12px 25px; border-radius: 10px; font-size: 18px;
-  cursor: pointer; margin-top: 25px;
-  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
-  transition: 0.3s;
-}
-button:hover { background: #0097a7; }
-
-/* ===== MOBILE ===== */
-@media (max-width: 768px) {
-  .navbar { flex-direction: column; gap: 10px; }
-  .navbar .nav-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
-  .cart-item { width: 95%; }
-  h1 { font-size: 6vw; }
-  .total { font-size: 5vw; }
-  button { font-size: 4vw; padding: 3vw 6vw; }
+/* MOBILE */
+@media (max-width:768px){
+  .navbar { flex-direction: column; gap:10px; }
+  .navbar .nav-links { display:flex; flex-wrap:wrap; justify-content:center; gap:10px; }
+  .cart-item { width:95%; }
+  .total { font-size:5vw; }
+  button { font-size:4vw; padding:3vw 6vw; }
 }
 </style>
 </head>
@@ -122,7 +39,7 @@ button:hover { background: #0097a7; }
   <div class="logo"><i data-lucide="credit-card"></i> CardsLawp</div>
   <div class="nav-links">
     <a href="/" ><i data-lucide="home"></i> Home</a>
-    <a href="/cart" class="active"><i data-lucide="shopping-cart"></i> Cart</a>
+    <a href="cart.html" class="active"><i data-lucide="shopping-cart"></i> Cart</a>
     <a href="/login"><i data-lucide="user"></i> Login</a>
   </div>
 </div>
@@ -130,8 +47,7 @@ button:hover { background: #0097a7; }
 <h1><i data-lucide="shopping-bag"></i> Your Cart</h1>
 
 <div class="select-all">
-  <i data-lucide="check-square"></i>
-  <label><input type="checkbox" id="selectAll"> Select All</label>
+  <label><input type="checkbox" id="selectAll" checked> Select All</label>
 </div>
 
 <div class="cart-container" id="cartItems"></div>
@@ -140,81 +56,80 @@ button:hover { background: #0097a7; }
 <button id="checkoutBtn"><i data-lucide="credit-card"></i> Pay with PayPal</button>
 
 <script>
-  lucide.createIcons();
+lucide.createIcons();
 
-  // Load cart from localStorage or API (no dummy items)
-  let cart = JSON.parse(localStorage.getItem("cart")) || [];
+let cart = JSON.parse(localStorage.getItem('cart')) || [];
+const cartContainer = document.getElementById('cartItems');
+const totalDisplay = document.getElementById('cartTotal');
+const checkoutBtn = document.getElementById('checkoutBtn');
+const selectAllBox = document.getElementById('selectAll');
 
-  const cartContainer = document.getElementById("cartItems");
-  const totalDisplay = document.getElementById("cartTotal");
-  const checkoutBtn = document.getElementById("checkoutBtn");
-  const selectAllBox = document.getElementById("selectAll");
-
-  function renderCart() {
-    cartContainer.innerHTML = "";
-    cart.forEach((item, index) => {
-      const div = document.createElement("div");
-      div.className = "cart-item";
-      div.innerHTML = `
-        <input type="checkbox" class="item-checkbox" data-index="${index}" checked>
-        <button class="remove-btn" data-index="${index}" title="Remove"><i data-lucide="trash-2"></i></button>
-        <img src="${item.img}" alt="${item.name}">
-        <h2><i data-lucide="${item.icon || 'gift'}"></i> ${item.name}</h2>
-        <p>Price: $${item.price}</p>
-      `;
-      cartContainer.appendChild(div);
-    });
-    lucide.createIcons();
-    updateTotal();
-  }
-
-  function updateTotal() {
-    const checkboxes = document.querySelectorAll(".item-checkbox");
-    let total = 0;
-    checkboxes.forEach((box, i) => {
-      if (box.checked) total += cart[i].price;
-    });
-    totalDisplay.textContent = `Total: $${total}`;
-  }
-
-  // Select all toggle
-  selectAllBox.addEventListener("change", () => {
-    const checked = selectAllBox.checked;
-    document.querySelectorAll(".item-checkbox").forEach(box => box.checked = checked);
-    updateTotal();
+function renderCart(){
+  cartContainer.innerHTML='';
+  cart.forEach((item,index)=>{
+    const div = document.createElement('div');
+    div.className='cart-item';
+    div.innerHTML = `
+      <input type="checkbox" class="item-checkbox" data-index="${index}" checked>
+      <button class="remove-btn" data-index="${index}" title="Remove"><i data-lucide="trash-2"></i></button>
+      <img src="${item.img}" alt="${item.name}">
+      <h2><i data-lucide="${item.icon || 'gift'}"></i> ${item.name}</h2>
+      <p>Price: $${item.price}</p>
+    `;
+    cartContainer.appendChild(div);
   });
+  lucide.createIcons();
+  updateTotal();
+  attachHandlers();
+}
 
-  // Remove item
-  document.addEventListener("click", e => {
-    if (e.target.closest(".remove-btn")) {
-      const index = e.target.closest(".remove-btn").dataset.index;
-      cart.splice(index, 1);
-      localStorage.setItem("cart", JSON.stringify(cart));
+// Update total based on checked items
+function updateTotal(){
+  let total = 0;
+  document.querySelectorAll('.item-checkbox').forEach(box=>{
+    if(box.checked) total += cart[box.dataset.index].price;
+  });
+  totalDisplay.textContent = `Total: $${total}`;
+}
+
+// Attach remove buttons and checkbox change
+function attachHandlers(){
+  document.querySelectorAll('.remove-btn').forEach(btn=>{
+    btn.onclick = ()=>{
+      const index = btn.dataset.index;
+      cart.splice(index,1);
+      localStorage.setItem('cart',JSON.stringify(cart));
       renderCart();
     }
   });
-
-  // Checkbox toggle
-  document.addEventListener("change", e => {
-    if (e.target.classList.contains("item-checkbox")) updateTotal();
+  document.querySelectorAll('.item-checkbox').forEach(box=>{
+    box.onchange = updateTotal;
   });
+}
 
-  // Checkout button
-  checkoutBtn.addEventListener("click", () => {
-    const selectedItems = cart.filter((_, i) => document.querySelectorAll(".item-checkbox")[i].checked);
-    if (selectedItems.length === 0) {
-      alert("Please select at least one item to pay for.");
-      return;
-    }
-    const paypalEmail = "zxueondrugz@gmail.com";
-    const itemsNote = encodeURIComponent(selectedItems.map(i => i.name).join(", "));
-    const amount = selectedItems.reduce((sum, i) => sum + i.price, 0);
-    const url = `https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=${paypalEmail}&item_name=${itemsNote}&amount=${amount}&currency_code=USD`;
-    window.open(url, "_blank");
+// Select all toggle
+selectAllBox.onchange = ()=>{
+  const checked = selectAllBox.checked;
+  document.querySelectorAll('.item-checkbox').forEach(box=>box.checked = checked);
+  updateTotal();
+}
+
+// Checkout
+checkoutBtn.onclick = ()=>{
+  const selectedItems = [];
+  document.querySelectorAll('.item-checkbox').forEach(box=>{
+    if(box.checked) selectedItems.push(cart[box.dataset.index]);
   });
+  if(selectedItems.length===0) return alert("Please select at least one item!");
+  
+  const paypalEmail = "zxueondrugz@gmail.com";
+  const itemsNote = encodeURIComponent(selectedItems.map(i=>i.name).join(", "));
+  const amount = selectedItems.reduce((sum,i)=>sum+i.price,0);
+  const url = `https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=${paypalEmail}&item_name=${itemsNote}&amount=${amount}&currency_code=USD`;
+  window.open(url,'_blank');
+}
 
-  // Initial render
-  renderCart();
+renderCart();
 </script>
 
 </body>
