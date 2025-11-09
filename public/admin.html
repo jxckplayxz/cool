@@ -1,115 +1,118 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CardsLawp Admin</title>
-  <style>
-    body { font-family: Arial, sans-serif; background: #121212; color: #fff; padding: 20px; }
-    input, button { padding: 8px; margin: 5px 0; border-radius: 5px; border: none; }
-    input { width: 250px; }
-    button { cursor: pointer; background: #4caf50; color: #fff; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th, td { border: 1px solid #444; padding: 10px; text-align: left; }
-    th { background: #333; }
-    .btn-approve { background: #4caf50; color: #fff; }
-    .btn-deny { background: #f44336; color: #fff; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel | CardsLawp</title>
+<link rel="stylesheet" href="/style.css">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  body { font-family: Arial, sans-serif; background:#f0f2f5; padding:20px; }
+  h1 { text-align:center; margin-bottom:20px; }
+  form { max-width:500px; margin:0 auto 30px auto; background:#fff; padding:20px; border-radius:15px; box-shadow:0 8px 16px rgba(0,0,0,0.1); display:flex; flex-direction:column; gap:10px; }
+  input { padding:10px; border-radius:10px; border:1px solid #ccc; width:100%; }
+  button { padding:12px; border:none; border-radius:12px; background:#667eea; color:#fff; cursor:pointer; transition:0.3s; }
+  button:hover { background:#764ba2; }
+  .logout-btn { background:#f44336; margin-top:10px; }
+  .logout-btn:hover { background:#d32f2f; }
+  .preview-container { display:flex; flex-wrap:wrap; gap:20px; justify-content:center; }
+  .card { background:#fff; border-radius:15px; padding:15px; width:200px; text-align:center; box-shadow:0 8px 16px rgba(0,0,0,0.1); position:relative; }
+  .card img { width:100%; border-radius:10px; margin-bottom:10px; }
+  .card h2 { font-size:1.1em; margin-bottom:5px; }
+  .card p { font-size:0.9em; margin-bottom:10px; }
+  .card button { padding:5px 10px; font-size:0.8em; background:#f44336; color:#fff; border-radius:8px; cursor:pointer; border:none; position:absolute; top:10px; right:10px; }
+  .card button:hover { background:#d32f2f; }
+</style>
 </head>
 <body>
 
-<h2>Admin Login</h2>
-<form id="loginForm">
-  <input name="email" placeholder="Email" required /><br/>
-  <input name="password" type="password" placeholder="Password" required /><br/>
-  <button type="submit">Login</button>
+<h1>Admin Panel</h1>
+
+<form id="addItemForm">
+  <input type="text" id="name" placeholder="Item Name" required>
+  <input type="text" id="description" placeholder="Description" required>
+  <input type="number" id="price" placeholder="Price" required>
+  <input type="text" id="image" placeholder="Image URL" required>
+  <button type="submit"><i data-lucide="plus-circle"></i> Add Item</button>
+  <button type="button" class="logout-btn" onclick="logout()"><i data-lucide="log-out"></i> Logout</button>
 </form>
 
-<div id="adminPanel" style="display:none;">
-  <h2>Pending Requests</h2>
-  <table id="requestsTable">
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Name</th>
-        <th>Description</th>
-        <th>Image</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-  <button id="logoutBtn">Logout</button>
+<div class="preview-container" id="previewContainer">
+  <!-- Live preview of items -->
 </div>
 
 <script>
-const loginForm = document.getElementById('loginForm');
-const adminPanel = document.getElementById('adminPanel');
-const requestsTableBody = document.querySelector('#requestsTable tbody');
-const logoutBtn = document.getElementById('logoutBtn');
+  lucide.createIcons();
 
-loginForm.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const form = e.target;
-  const email = form.email.value;
-  const password = form.password.value;
+  const form = document.getElementById('addItemForm');
+  const previewContainer = document.getElementById('previewContainer');
 
-  const res = await fetch('/api/login', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password })
-  });
-
-  const data = await res.json();
-  if (data.success) {
-    alert('Login successful!');
-    loginForm.style.display = 'none';
-    adminPanel.style.display = 'block';
-    loadRequests();
-  } else {
-    alert('Login failed: ' + data.message);
+  // Fetch and display items
+  function loadItems() {
+    fetch('/api/items')
+      .then(res => res.json())
+      .then(items => {
+        previewContainer.innerHTML = '';
+        items.forEach(item => {
+          const card = document.createElement('div');
+          card.classList.add('card');
+          card.innerHTML = `
+            <img src="${item.image}" alt="${item.name}">
+            <h2>${item.name}</h2>
+            <p>${item.description}</p>
+            <p><b>$${item.price}</b></p>
+            <button onclick="deleteItem('${item._id}')"><i data-lucide="trash-2"></i></button>`;
+          previewContainer.appendChild(card);
+        });
+        lucide.createIcons();
+      });
   }
-});
 
-async function loadRequests() {
-  const res = await fetch('/api/admin/requests');
-  const requests = await res.json();
-  requestsTableBody.innerHTML = '';
-  requests.forEach(r => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${r.id}</td>
-      <td>${r.name}</td>
-      <td>${r.description}</td>
-      <td><img src="${r.image}" width="50" /></td>
-      <td>
-        <button class="btn-approve" onclick="approve(${r.id})">Approve</button>
-        <button class="btn-deny" onclick="deny(${r.id})">Deny</button>
-      </td>
-    `;
-    requestsTableBody.appendChild(tr);
+  // Add new item
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    const data = {
+      name: document.getElementById('name').value,
+      description: document.getElementById('description').value,
+      price: document.getElementById('price').value,
+      image: document.getElementById('image').value
+    };
+    fetch('/api/items/add', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(data)
+    }).then(res => res.json())
+      .then(resp => {
+        if(resp.success) {
+          alert('Item added!');
+          form.reset();
+          loadItems();
+        } else {
+          alert('Error adding item');
+        }
+      });
   });
-}
 
-async function approve(id) {
-  const res = await fetch(`/api/admin/approve/${id}`, { method: 'POST' });
-  const data = await res.json();
-  alert(data.message);
-  loadRequests();
-}
+  // Delete item
+  function deleteItem(id) {
+    fetch('/api/items/delete', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ id })
+    }).then(res => res.json())
+      .then(resp => {
+        if(resp.success) loadItems();
+        else alert('Error deleting item');
+      });
+  }
 
-async function deny(id) {
-  const res = await fetch(`/api/admin/deny/${id}`, { method: 'POST' });
-  const data = await res.json();
-  alert(data.message);
-  loadRequests();
-}
+  // Logout
+  function logout() {
+    fetch('/admin-logout').then(() => window.location='/');
+  }
 
-logoutBtn.addEventListener('click', async () => {
-  await fetch('/api/logout'); // optional if you implement logout route
-  adminPanel.style.display = 'none';
-  loginForm.style.display = 'block';
-});
+  // Initial load
+  loadItems();
 </script>
 </body>
 </html>
