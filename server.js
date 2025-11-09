@@ -1,7 +1,6 @@
 // server.js
 const express = require('express');
 const path = require('path');
-const session = require('express-session');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -11,13 +10,6 @@ app.use(express.urlencoded({ extended: true }));
 
 // Serve static files from "public" folder
 app.use(express.static(path.join(__dirname, 'public')));
-
-// ===== SESSION =====
-app.use(session({
-  secret: 'supersecretkey',
-  resave: false,
-  saveUninitialized: true
-}));
 
 // ===== STORAGE =====
 let items = []; // Admin will add items
@@ -39,27 +31,19 @@ app.get('/admin-login', (req, res) => res.sendFile(path.join(__dirname, 'public'
 
 // Admin panel page
 app.get('/admin', (req, res) => {
-  if (!req.session.admin) return res.redirect('/admin-login');
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
-// Admin login POST
+// Admin login POST (no session verification)
 const ADMIN_USERNAME = "admin";       // change your admin username
 const ADMIN_PASSWORD = "password123"; // change your admin password
 
 app.post('/admin-login', (req, res) => {
   const { username, password } = req.body;
   if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
-    req.session.admin = true;
     return res.redirect('/admin');
   }
   res.send('Invalid credentials');
-});
-
-// Admin logout
-app.get('/admin-logout', (req, res) => {
-  req.session.destroy();
-  res.redirect('/');
 });
 
 // ===== API =====
@@ -67,9 +51,8 @@ app.get('/admin-logout', (req, res) => {
 // Get items
 app.get('/api/items', (req, res) => res.json(items));
 
-// Add item (admin only)
+// Add item (no session required)
 app.post('/api/items/add', (req, res) => {
-  if (!req.session.admin) return res.status(403).json({ error: 'Not authorized' });
   const { name, description, price, image } = req.body;
   if (!name || !description || !price || !image) {
     return res.status(400).json({ error: 'All fields are required' });
@@ -85,9 +68,8 @@ app.post('/api/items/add', (req, res) => {
   res.json({ success: true, item: newItem });
 });
 
-// Delete item (admin only)
+// Delete item (no session required)
 app.post('/api/items/delete', (req, res) => {
-  if (!req.session.admin) return res.status(403).json({ error: 'Not authorized' });
   const { id } = req.body;
   items = items.filter(item => item._id !== id);
   res.json({ success: true });
