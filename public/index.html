@@ -25,7 +25,7 @@ body { background:#f0f2f5; color:#333; padding-top:70px; }
 .hero { 
   text-align:center; 
   padding:150px 20px 50px; 
-  background: linear-gradient(to right, #667eea, #764ba2); /* OLD HERO BACKGROUND */
+  background: linear-gradient(to right, #667eea, #764ba2);
   color:#fff; 
 }
 .hero h1 { font-size:3em; margin-bottom:20px; }
@@ -75,7 +75,7 @@ body { background:#f0f2f5; color:#333; padding-top:70px; }
   <div class="logo"><i data-lucide="credit-card"></i> CardsLawp</div>
   <div class="nav-links">
     <a href="/" class="active"><i data-lucide="home"></i> Home</a>
-    <a href="/cart"><i data-lucide="shopping-cart"></i> Cart</a>
+    <a href="cart.html"><i data-lucide="shopping-cart"></i> Cart</a>
     <a href="/login"><i data-lucide="user"></i> Login</a>
   </div>
 </div>
@@ -103,42 +103,43 @@ body { background:#f0f2f5; color:#333; padding-top:70px; }
 <script>
 lucide.createIcons();
 
+// Scroll to products
 function scrollToCards() {
   document.getElementById('products').scrollIntoView({behavior:'smooth'});
 }
 
+// Open modal
 function openModal(item){
   document.getElementById('modalImage').src = item.image;
   document.getElementById('modalTitle').innerText = item.name;
   document.getElementById('modalDesc').innerText = item.description;
   document.getElementById('modalPrice').innerText = `$${item.price}`;
   document.getElementById('productModal').style.display = 'flex';
-  document.getElementById('modalAddBtn').onclick = ()=>addToCart(item._id);
+  document.getElementById('modalAddBtn').onclick = ()=>addToCart(item);
 }
 
 function closeModal(){
   document.getElementById('productModal').style.display = 'none';
 }
 
-// ADD TO CART FUNCTION
-function addToCart(id){
-  fetch('/api/cart/add',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({id})
-  }).then(res=>res.json())
-    .then(data=>{
-      if(data.success){
-        alert('Item added to cart!');
-      } else {
-        alert('Failed to add item.');
-      }
-    });
+// ===== ADD TO CART USING LOCALSTORAGE =====
+function addToCart(item){
+  let cart = JSON.parse(localStorage.getItem('cart')) || [];
+  cart.push({
+    id: item._id,
+    name: item.name,
+    price: item.price,
+    img: item.image,
+    icon: 'gift'
+  });
+  localStorage.setItem('cart', JSON.stringify(cart));
+  alert('Item added to cart!');
 }
 
-// LOAD ITEMS
+// ===== LOAD ITEMS =====
 document.addEventListener('DOMContentLoaded', ()=>{
   fetch('/api/items').then(res=>res.json()).then(items=>{
+    window.items = items; // make globally available for modal add
     const container = document.getElementById('products');
     container.innerHTML='';
     items.forEach(item=>{
