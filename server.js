@@ -1,120 +1,92 @@
-import express from "express";
-import fs from "fs";
-import path from "path";
-import bodyParser from "body-parser";
-import paypal from "@paypal/checkout-server-sdk";
-
+const express = require('express');
+const path = require('path');
+const session = require('express-session');
 const app = express();
 const PORT = process.env.PORT || 3000;
-const __dirname = path.resolve();
 
-app.use(express.static("public"));
-app.use(bodyParser.json());
+// ===== MIDDLEWARE =====
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname)));
 
-const productsPath = path.join(__dirname, "products.json");
-const ordersPath = path.join(__dirname, "orders.json");
-if (!fs.existsSync(productsPath)) fs.writeFileSync(productsPath, "[]");
-if (!fs.existsSync(ordersPath)) fs.writeFileSync(ordersPath, "[]");
+// Session for admin login
+app.use(session({
+  secret: 'supersecretkey', 
+  resave: false, 
+  saveUninitialized: true
+}));
 
-// ✅ PayPal setup
-const Environment =
-  process.env.NODE_ENV === "production"
-    ? paypal.core.LiveEnvironment
-    : paypal.core.SandboxEnvironment;
+// ===== IN-MEMORY STORAGE =====
+let items = [];
+let cart = [];
 
-const paypalClient = new paypal.core.PayPalHttpClient(
-  new Environment(
-    process.env.PAYPAL_CLIENT_ID || "YOUR_SANDBOX_CLIENT_ID",
-    process.env.PAYPAL_SECRET || "YOUR_SANDBOX_SECRET"
-  )
-);
+// ===== ROUTES =====
 
-// 🛍️ Get products
-app.get("/api/products", (req, res) => {
-  const products = JSON.parse(fs.readFileSync(productsPath));
-  res.json(products);
+// Home page
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
+
+// Login page
+app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'login.html')));
+
+// Cart page
+app.get('/cart', (req, res) => res.sendFile(path.join(__dirname, 'cart.html')));
+
+// Admin page (add items)
+app.get('/admin', (req, res) => {
+  if (!req.session.admin) return res.redirect('/admin-login');
+  res.sendFile(path.join(__dirname, 'admin.html'));
 });
 
-// 🔑 Admin login
-app.post("/api/login", (req, res) => {
-  const { email, password } = req.body;
-  if (email === "admin@cardslawp.com" && password === "admin123") {
-    return res.json({ success: true, admin: true });
+// Admin login page
+app.get('/admin-login', (req, res) => res.sendFile(path.join(__dirname, 'admin-login.html')));
+
+// Admin login POST
+const ADMIN_USERNAME = "admin";
+const ADMIN_PASSWORD = "password123"; // change this
+
+app.post('/admin-login', (req, res) => {
+  const { username, password } = req.body;
+  if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+    req.session.admin = true;
+    return res.redirect('/admin');
   }
-  res.json({ success: true, admin: false });
+  res.send('Invalid credentials');
 });
 
-// 🛒 Add item (admin only)
-app.post("/api/add-item", (req, res) => {
-  const { email, name, image, desc, price } = req.body;
-  if (email !== "admin@cardslawp.com") return res.status(403).json({ error: "Unauthorized" });
-
-  const products = JSON.parse(fs.readFileSync(productsPath));
-  products.push({ name, image, desc, price });
-  fs.writeFileSync(productsPath, JSON.stringify(products, null, 2));
-  res.json({ success: true });
+// Admin logout
+app.get('/admin-logout', (req, res) => {
+  req.session.destroy();
+  res.redirect('/');
 });
 
-// 💸 Create PayPal order
-app.post("/api/create-order", async (req, res) => {
-  const { cart, buyerEmail } = req.body;
-  const total = cart.reduce((sum, item) => sum + Number(item.price), 0);
+// ===== API =====
 
-  const request = new paypal.orders.OrdersCreateRequest();
-  request.prefer("return=representation");
-  request.requestBody({
-    intent: "CAPTURE",
-    purchase_units: [
-      {
-        amount: {
-          currency_code: "USD",
-          value: total.toFixed(2),
-        },
-        payee: {
-          email_address: "zxueondrugz@gmail.com", // your receiving PayPal email
-        },
-      },
-    ],
-  });
+// Get items
+app.get('/api/items', (req, res) => res.json(items));
 
-  try {
-    const order = await paypalClient.execute(request);
-    res.json({ id: order.result.id });
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Error creating order");
-  }
+// Add item (admin only)
+app.post('/api/items/add', (req, res) => {
+  if (!req.session.admin) return res.status(403).json({ error: 'Not authorized' });
+  const { name, description, price, image } = req.body;
+  const newItem = {
+    _id: Date.now().toString(),
+    name, description, price, image
+  };
+  items.push(newItem);
+  res.json({ success: true, item: newItem });
 });
 
-// ✅ Capture payment and log purchase
-app.post("/api/capture-order", async (req, res) => {
-  const { orderID, buyerEmail, cart } = req.body;
-
-  try {
-    const captureRequest = new paypal.orders.OrdersCaptureRequest(orderID);
-    captureRequest.requestBody({});
-    const capture = await paypalClient.execute(captureRequest);
-
-    const orders = JSON.parse(fs.readFileSync(ordersPath));
-    orders.push({
-      buyerEmail,
-      cart,
-      date: new Date().toISOString(),
-      status: "Completed",
-    });
-    fs.writeFileSync(ordersPath, JSON.stringify(orders, null, 2));
-
-    res.json({ success: true, message: "Purchase recorded!" });
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Error capturing order");
-  }
+// Cart API
+app.post('/api/cart/add', (req, res) => {
+  const { id } = req.body;
+  const item = items.find(i => i._id === id);
+  if (!item) return res.status(404).json({ error: 'Item not found' });
+  cart.push(item);
+  res.json({ success: true, cart });
 });
 
-// 📋 Admin check purchases
-app.get("/api/orders", (req, res) => {
-  const orders = JSON.parse(fs.readFileSync(ordersPath));
-  res.json(orders);
-});
+app.get('/api/cart', (req, res) => res.json(cart));
+app.post('/api/cart/clear', (req, res) => { cart = []; res.json({ success: true }); });
 
-app.listen(PORT, () => console.log(`✅ CardsLawp server running on ${PORT}`));
+// ===== START SERVER =====
+app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
