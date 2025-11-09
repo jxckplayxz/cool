@@ -8,7 +8,9 @@ const PORT = process.env.PORT || 3000;
 // ===== MIDDLEWARE =====
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname)));
+
+// Serve static files from "public" folder
+app.use(express.static(path.join(__dirname, 'public')));
 
 // ===== SESSION =====
 app.use(session({
@@ -24,25 +26,25 @@ let cart = [];
 // ===== ROUTES =====
 
 // Home page
-app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
 // Login page
-app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'login.html')));
+app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'public', 'login.html')));
 
 // Cart page
-app.get('/cart', (req, res) => res.sendFile(path.join(__dirname, 'cart.html')));
+app.get('/cart', (req, res) => res.sendFile(path.join(__dirname, 'public', 'cart.html')));
 
 // Admin login page
-app.get('/admin-login', (req, res) => res.sendFile(path.join(__dirname, 'admin-login.html')));
+app.get('/admin-login', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin-login.html')));
 
 // Admin panel page
 app.get('/admin', (req, res) => {
   if (!req.session.admin) return res.redirect('/admin-login');
-  res.sendFile(path.join(__dirname, 'admin.html'));
+  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
 // Admin login POST
-const ADMIN_USERNAME = "admin";      // change your admin username
+const ADMIN_USERNAME = "admin";       // change your admin username
 const ADMIN_PASSWORD = "password123"; // change your admin password
 
 app.post('/admin-login', (req, res) => {
