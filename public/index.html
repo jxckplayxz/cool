@@ -1,81 +1,119 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CardsLawp - Gift Cards</title>
-    <link rel="stylesheet" href="/style.css">
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CardsLawp | Gift Cards</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
-    <header class="navbar glassy">
-        <div class="logo-area">
-            <h1><i data-lucide="credit-card"></i> CardsLawp</h1>
-        </div>
-        <nav>
-            <a href="/"><i data-lucide="home"></i> Home</a>
-            <a href="/cart"><i data-lucide="shopping-cart"></i> Cart</a>
-            <a href="/login"><i data-lucide="user"></i> Login</a>
-        </nav>
-    </header>
+  <!-- ===== NAVBAR ===== -->
+  <div class="navbar">
+    <div class="logo"><i data-lucide="credit-card"></i> CardsLawp</div>
+    <div class="nav-links">
+      <a href="/" class="active"><i data-lucide="home"></i> Home</a>
+      <a href="/cart"><i data-lucide="shopping-cart"></i> Cart</a>
+      <a href="/login"><i data-lucide="user"></i> Login</a>
+    </div>
+  </div>
 
-    <section id="products" class="fade-section">
-        <h2><i data-lucide="gift"></i> Available Gift Cards</h2>
-        <div class="product-grid" id="product-grid"></div>
-    </section>
+  <!-- ===== HERO SECTION ===== -->
+  <section class="hero fade">
+    <h1><i data-lucide="gift"></i> Welcome to CardsLawp</h1>
+    <p>Buy digital gift cards instantly — fast, secure, and verified.</p>
+    <button class="hero-btn" onclick="scrollToCards()"><i data-lucide='shopping-bag'></i> Shop Now</button>
+  </section>
 
-    <footer class="footer glassy">
-        <p><i data-lucide="mail"></i> Contact us: support@cardslawp.com</p>
-        <p><i data-lucide="shield"></i> Secure Checkout • PayPal Verified</p>
-    </footer>
+  <!-- ===== PRODUCT CARDS ===== -->
+  <section id="products" class="cards-container fade">
+    <!-- Cards will be loaded here -->
+  </section>
 
-    <script>
-        // Load products
-        fetch('/api/items')
-            .then(res => res.json())
-            .then(items => {
-                const grid = document.getElementById('product-grid');
-                items.forEach(item => {
-                    const card = document.createElement('div');
-                    card.classList.add('product-card');
-                    card.innerHTML = `
-                        <img src="${item.image}" alt="${item.name}">
-                        <h3><i data-lucide="gift"></i> ${item.name}</h3>
-                        <p>${item.description}</p>
-                        <p class="price">$${item.price}</p>
-                        <button onclick="addToCart('${item._id}')"><i data-lucide="shopping-bag"></i> Add to Cart</button>
-                    `;
-                    grid.appendChild(card);
-                });
-                lucide.createIcons(); // render icons dynamically
-            });
+  <!-- ===== CART SIDEBAR ===== -->
+  <div id="cartSidebar">
+    <h2><i data-lucide="shopping-cart"></i> Your Cart</h2>
+    <div id="cartItems"></div>
+    <button id="checkoutBtn"><i data-lucide="credit-card"></i> Pay with PayPal</button>
+  </div>
 
-        function addToCart(id) {
-            fetch('/api/cart/add', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({id})
-            }).then(res => res.json()).then(() => alert('Added to cart!'));
-        }
+  <!-- ===== MODAL FOR PRODUCT DETAILS ===== -->
+  <div class="modal" id="productModal">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal()">&times;</span>
+      <img id="modalImage" src="" alt="">
+      <h2 id="modalTitle"></h2>
+      <p id="modalDesc"></p>
+      <p id="modalPrice"></p>
+      <button class="addCartBtn" id="modalAddBtn"><i data-lucide="plus-circle"></i> Add to Cart</button>
+    </div>
+  </div>
 
-        // Disable animations on mobile
-        const isMobile = /Mobi|Android/i.test(navigator.userAgent);
-        if (!isMobile) {
-            const observer = new IntersectionObserver(entries => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        entry.target.classList.add('visible');
-                    } else {
-                        entry.target.classList.remove('visible');
-                    }
-                });
-            }, {threshold: 0.1});
-            document.querySelectorAll('.fade-section, .product-card').forEach(el => observer.observe(el));
-        }
+  <script>
+    // ===== SCROLL TO CARDS =====
+    function scrollToCards() {
+      document.getElementById('products').scrollIntoView({behavior: 'smooth'});
+    }
 
-        // Initialize icons
+    // ===== LOAD PRODUCTS =====
+    fetch('/api/items')
+      .then(res => res.json())
+      .then(items => {
+        const container = document.querySelector('.cards-container');
+        container.innerHTML = '';
+        items.forEach(item => {
+          const card = document.createElement('div');
+          card.classList.add('card', 'fade');
+          card.innerHTML = `
+            <img src="${item.image}" alt="${item.name}">
+            <h2>${item.name}</h2>
+            <p>${item.description}</p>
+            <p><b>$${item.price}</b></p>
+            <button onclick="openModal('${item._id}', '${item.image}', '${item.name}', '${item.description}', ${item.price})">
+              <i data-lucide="eye"></i> View
+            </button>`;
+          container.appendChild(card);
+        });
         lucide.createIcons();
-    </script>
+      });
+
+    // ===== MODAL =====
+    function openModal(id, img, title, desc, price) {
+      document.getElementById('modalImage').src = img;
+      document.getElementById('modalTitle').innerText = title;
+      document.getElementById('modalDesc').innerText = desc;
+      document.getElementById('modalPrice').innerText = `$${price}`;
+      document.getElementById('productModal').style.display = 'flex';
+      document.getElementById('modalAddBtn').onclick = () => addToCart(id);
+    }
+
+    function closeModal() {
+      document.getElementById('productModal').style.display = 'none';
+    }
+
+    // ===== CART =====
+    function addToCart(id) {
+      fetch('/api/cart/add', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({id})
+      }).then(() => alert('Item added to cart!'));
+    }
+
+    // ===== FADE ANIMATIONS (DISABLE ON MOBILE) =====
+    const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+    if (!isMobile) {
+      const observer = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) entry.target.classList.remove('fade');
+          else entry.target.classList.add('fade');
+        });
+      }, { threshold: 0.2 });
+
+      document.querySelectorAll('.fade').forEach(el => observer.observe(el));
+    }
+
+    lucide.createIcons();
+  </script>
 </body>
 </html>
