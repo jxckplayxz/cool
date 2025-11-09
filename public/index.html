@@ -41,12 +41,6 @@
     .card button { padding:8px 15px; border:none; background:#667eea; color:#fff; border-radius:10px; cursor:pointer; transition:0.3s; }
     .card button:hover { background:#764ba2; }
 
-    /* ===== SUGGEST FORM ===== */
-    .suggest { max-width:600px; margin:50px auto; display:flex; flex-direction:column; gap:10px; }
-    .suggest input, .suggest textarea { padding:10px; border-radius:10px; border:1px solid #ccc; width:100%; }
-    .suggest button { padding:12px; border:none; border-radius:12px; background:#667eea; color:#fff; cursor:pointer; transition:0.3s; }
-    .suggest button:hover { background:#764ba2; }
-
     /* ===== MODAL ===== */
     .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); justify-content:center; align-items:center; z-index:2000; }
     .modal-content { background:#fff; border-radius:15px; padding:20px; max-width:400px; width:90%; text-align:center; position:relative; }
@@ -73,27 +67,20 @@
       .navbar { flex-direction: column; align-items: flex-start; padding: 10px 20px; border-radius: 0 0 10px 10px; }
       .navbar .nav-links { display: flex; flex-wrap: wrap; width: 100%; margin-top: 10px; gap: 10px; }
       .navbar .nav-links a, .navbar .nav-links button { margin-left: 0; flex: 1 1 45%; text-align: center; }
-
       .hero { padding:120px 20px 40px; }
       .hero h1 { font-size:2em; }
       .hero p { font-size:1em; }
       .hero .hero-btn { padding:10px 20px; font-size:0.95em; }
-
       .cards-container { flex-direction: column; align-items: center; padding: 30px 10px; gap: 15px; }
       .card { width: 90%; }
-
-      .suggest { width: 90%; margin: 30px auto; }
-      .suggest input, .suggest textarea { width: 100%; }
-
       .modal-content { max-width: 90%; padding: 15px; }
-
       #cartSidebar { width: 90%; right: -100%; }
       #cartSidebar.show { right: 0; }
     }
   </style>
 </head>
 <body>
-  <!-- ===== NAVBAR ===== -->
+  <!-- NAVBAR -->
   <div class="navbar">
     <div class="logo"><i data-lucide="credit-card"></i> CardsLawp</div>
     <div class="nav-links">
@@ -103,26 +90,24 @@
     </div>
   </div>
 
-  <!-- ===== HERO SECTION ===== -->
+  <!-- HERO -->
   <section class="hero fade">
     <h1><i data-lucide="gift"></i> Welcome to CardsLawp</h1>
     <p>Buy digital gift cards instantly — fast, secure, and verified.</p>
     <button class="hero-btn" onclick="scrollToCards()"><i data-lucide='shopping-bag'></i> Shop Now</button>
   </section>
 
-  <!-- ===== PRODUCT CARDS ===== -->
-  <section id="products" class="cards-container fade">
-    <!-- Cards will be loaded here -->
-  </section>
+  <!-- PRODUCTS -->
+  <section class="cards-container fade" id="products"></section>
 
-  <!-- ===== CART SIDEBAR ===== -->
+  <!-- CART SIDEBAR -->
   <div id="cartSidebar">
     <h2><i data-lucide="shopping-cart"></i> Your Cart</h2>
     <div id="cartItems"></div>
     <button id="checkoutBtn"><i data-lucide="credit-card"></i> Pay with PayPal</button>
   </div>
 
-  <!-- ===== MODAL FOR PRODUCT DETAILS ===== -->
+  <!-- PRODUCT MODAL -->
   <div class="modal" id="productModal">
     <div class="modal-content">
       <span class="close" onclick="closeModal()">&times;</span>
@@ -135,32 +120,36 @@
   </div>
 
   <script>
+    lucide.createIcons();
+
     // ===== SCROLL TO CARDS =====
     function scrollToCards() {
       document.getElementById('products').scrollIntoView({behavior: 'smooth'});
     }
 
     // ===== LOAD PRODUCTS =====
-    fetch('/api/items')
-      .then(res => res.json())
-      .then(items => {
-        const container = document.querySelector('.cards-container');
-        container.innerHTML = '';
-        items.forEach(item => {
-          const card = document.createElement('div');
-          card.classList.add('card', 'fade');
-          card.innerHTML = `
-            <img src="${item.image}" alt="${item.name}">
-            <h2>${item.name}</h2>
-            <p>${item.description}</p>
-            <p><b>$${item.price}</b></p>
-            <button onclick="openModal('${item._id}', '${item.image}', '${item.name}', '${item.description}', ${item.price})">
-              <i data-lucide="eye"></i> View
-            </button>`;
-          container.appendChild(card);
+    document.addEventListener('DOMContentLoaded', () => {
+      fetch('/api/items')
+        .then(res => res.json())
+        .then(items => {
+          const container = document.querySelector('.cards-container');
+          container.innerHTML = '';
+          items.forEach(item => {
+            const card = document.createElement('div');
+            card.classList.add('card', 'fade');
+            card.innerHTML = `
+              <img src="${item.image}" alt="${item.name}">
+              <h2>${item.name}</h2>
+              <p>${item.description}</p>
+              <p><b>$${item.price}</b></p>
+              <button onclick="openModal('${item._id}', '${item.image}', '${item.name}', '${item.description}', ${item.price})">
+                <i data-lucide="eye"></i> View
+              </button>`;
+            container.appendChild(card);
+          });
+          lucide.createIcons();
         });
-        lucide.createIcons();
-      });
+    });
 
     // ===== MODAL =====
     function openModal(id, img, title, desc, price) {
@@ -185,7 +174,7 @@
       }).then(() => alert('Item added to cart!'));
     }
 
-    // ===== FADE ANIMATIONS (DISABLE ON MOBILE) =====
+    // ===== FADE ANIMATIONS =====
     const isMobile = /Mobi|Android/i.test(navigator.userAgent);
     if (!isMobile) {
       const observer = new IntersectionObserver(entries => {
@@ -200,8 +189,6 @@
     // ===== DYNAMIC MOBILE SCALING =====
     function adjustForScreen() {
       const w = window.innerWidth;
-      const h = window.innerHeight;
-
       const heroTitle = document.querySelector('.hero h1');
       const heroText = document.querySelector('.hero p');
       const heroBtn = document.querySelector('.hero .hero-btn');
@@ -227,8 +214,6 @@
 
     adjustForScreen();
     window.addEventListener('resize', adjustForScreen);
-
-    lucide.createIcons();
   </script>
 </body>
 </html>
