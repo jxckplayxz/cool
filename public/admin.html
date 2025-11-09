@@ -9,18 +9,29 @@
 body { font-family: Arial, sans-serif; background:#f0f2f5; padding:20px; }
 h1 { text-align:center; margin-bottom:20px; }
 form { max-width:500px; margin:0 auto 30px auto; background:#fff; padding:20px; border-radius:15px; box-shadow:0 8px 16px rgba(0,0,0,0.1); display:flex; flex-direction:column; gap:10px; }
-input { padding:10px; border-radius:10px; border:1px solid #ccc; width:100%; }
-button { padding:12px; border:none; border-radius:12px; background:#667eea; color:#fff; cursor:pointer; transition:0.3s; }
+input, select { padding:10px; border-radius:10px; border:1px solid #ccc; width:100%; }
+button { padding:12px; border:none; border-radius:12px; background:#667eea; color:#fff; cursor:pointer; transition:0.3s; display:flex; align-items:center; gap:6px; justify-content:center; }
 button:hover { background:#764ba2; }
 .logout-btn { background:#f44336; margin-top:10px; }
 .logout-btn:hover { background:#d32f2f; }
+
 .preview-container { display:flex; flex-wrap:wrap; gap:20px; justify-content:center; }
-.card { background:#fff; border-radius:15px; padding:15px; width:200px; text-align:center; box-shadow:0 8px 16px rgba(0,0,0,0.1); position:relative; }
-.card img { width:100%; border-radius:10px; margin-bottom:10px; }
+.card { background:#fff; border-radius:15px; padding:15px; width:220px; text-align:center; box-shadow:0 8px 16px rgba(0,0,0,0.1); position:relative; transition:0.3s; }
+.card img { width:100%; border-radius:10px; margin-bottom:10px; height:120px; object-fit:cover; }
 .card h2 { font-size:1.1em; margin-bottom:5px; }
 .card p { font-size:0.9em; margin-bottom:10px; }
-.card button { padding:5px 10px; font-size:0.8em; background:#f44336; color:#fff; border-radius:8px; cursor:pointer; border:none; position:absolute; top:10px; right:10px; }
-.card button:hover { background:#d32f2f; }
+.card button { padding:5px 10px; font-size:0.8em; border-radius:8px; cursor:pointer; border:none; position:absolute; top:10px; right:10px; }
+.card button.delete-btn { background:#f44336; }
+.card button.delete-btn:hover { background:#d32f2f; }
+.card button.logs-btn { top:auto; bottom:10px; right:10px; background:#00bcd4; }
+.card button.logs-btn:hover { background:#0097a7; }
+
+.modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); justify-content:center; align-items:center; z-index:2000; }
+.modal-content { background:#fff; border-radius:15px; padding:20px; max-width:500px; width:90%; text-align:left; position:relative; max-height:80vh; overflow-y:auto; }
+.modal-content h3 { margin-bottom:10px; }
+.modal-content .close { position:absolute; top:10px; right:15px; font-size:1.5em; cursor:pointer; }
+.log-item { border-bottom:1px solid #ccc; padding:5px 0; font-size:0.9em; }
+
 </style>
 </head>
 <body>
@@ -31,18 +42,31 @@ button:hover { background:#764ba2; }
   <input type="text" id="name" placeholder="Item Name" required>
   <input type="text" id="description" placeholder="Description" required>
   <input type="number" id="price" placeholder="Price" required>
-  <input type="text" id="image" placeholder="Image URL" required>
+  <input type="text" id="image" placeholder="Image URL (optional)">
   <button type="submit"><i data-lucide="plus-circle"></i> Add Item</button>
   <button type="button" class="logout-btn" onclick="window.location='/'"><i data-lucide="log-out"></i> Logout</button>
 </form>
 
 <div class="preview-container" id="previewContainer"></div>
 
+<!-- MODAL FOR PURCHASE LOGS -->
+<div class="modal" id="logsModal">
+  <div class="modal-content">
+    <span class="close" onclick="closeLogs()">&times;</span>
+    <h3>Purchase Logs</h3>
+    <div id="logsContainer"></div>
+  </div>
+</div>
+
 <script>
 lucide.createIcons();
 
 const form = document.getElementById('addItemForm');
 const previewContainer = document.getElementById('previewContainer');
+const logsModal = document.getElementById('logsModal');
+const logsContainer = document.getElementById('logsContainer');
+
+const DEFAULT_IMAGE = 'https://em-content.zobj.net/source/noto-emoji-animations/344/gift_1f381.gif';
 
 function loadItems() {
   fetch('/api/items')
@@ -53,11 +77,13 @@ function loadItems() {
         const card = document.createElement('div');
         card.classList.add('card');
         card.innerHTML = `
-          <img src="${item.image}" alt="${item.name}">
+          <img src="${item.image || DEFAULT_IMAGE}" alt="${item.name}">
           <h2>${item.name}</h2>
           <p>${item.description}</p>
           <p><b>$${item.price}</b></p>
-          <button onclick="deleteItem('${item._id}')"><i data-lucide="trash-2"></i></button>`;
+          <button class="delete-btn" onclick="deleteItem('${item._id}')"><i data-lucide="trash-2"></i></button>
+          <button class="logs-btn" onclick="showLogs('${item._id}')"><i data-lucide="list"></i> Logs</button>
+        `;
         previewContainer.appendChild(card);
       });
       lucide.createIcons();
@@ -69,8 +95,8 @@ form.addEventListener('submit', e => {
   const data = {
     name: document.getElementById('name').value,
     description: document.getElementById('description').value,
-    price: document.getElementById('price').value,
-    image: document.getElementById('image').value
+    price: parseFloat(document.getElementById('price').value),
+    image: document.getElementById('image').value || DEFAULT_IMAGE
   };
   fetch('/api/items/add', {
     method: 'POST',
@@ -96,6 +122,25 @@ function deleteItem(id) {
       if(resp.success) loadItems();
       else alert('Error deleting item');
     });
+}
+
+// PURCHASE LOGS MODAL
+function showLogs(itemId) {
+  fetch(`/api/items/logs/${itemId}`)
+    .then(res => res.json())
+    .then(logs => {
+      logsContainer.innerHTML = logs.length ? logs.map(l=>`<div class="log-item">${l.user} bought ${l.name} ($${l.price}) at ${new Date(l.date).toLocaleString()}</div>`).join('') : '<p>No purchases yet.</p>';
+      logsModal.style.display='flex';
+    });
+}
+
+function closeLogs() {
+  logsModal.style.display='none';
+}
+
+// Close modal on click outside
+window.onclick = e => {
+  if(e.target == logsModal) logsModal.style.display='none';
 }
 
 // Initial load
