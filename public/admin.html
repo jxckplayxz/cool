@@ -31,7 +31,6 @@ button:hover { background:#764ba2; }
 .modal-content h3 { margin-bottom:10px; }
 .modal-content .close { position:absolute; top:10px; right:15px; font-size:1.5em; cursor:pointer; }
 .log-item { border-bottom:1px solid #ccc; padding:5px 0; font-size:0.9em; }
-
 </style>
 </head>
 <body>
@@ -68,29 +67,29 @@ const logsContainer = document.getElementById('logsContainer');
 
 const DEFAULT_IMAGE = 'https://em-content.zobj.net/source/noto-emoji-animations/344/gift_1f381.gif';
 
-function loadItems() {
-  fetch('/api/items')
-    .then(res => res.json())
-    .then(items => {
-      previewContainer.innerHTML = '';
-      items.forEach(item => {
-        const card = document.createElement('div');
-        card.classList.add('card');
-        card.innerHTML = `
-          <img src="${item.image || DEFAULT_IMAGE}" alt="${item.name}">
-          <h2>${item.name}</h2>
-          <p>${item.description}</p>
-          <p><b>$${item.price}</b></p>
-          <button class="delete-btn" onclick="deleteItem('${item._id}')"><i data-lucide="trash-2"></i></button>
-          <button class="logs-btn" onclick="showLogs('${item._id}')"><i data-lucide="list"></i> Logs</button>
-        `;
-        previewContainer.appendChild(card);
-      });
-      lucide.createIcons();
-    });
+async function loadItems() {
+  const res = await fetch('/api/items');
+  const items = await res.json();
+  previewContainer.innerHTML = '';
+
+  items.forEach(item => {
+    const card = document.createElement('div');
+    card.classList.add('card');
+    card.innerHTML = `
+      <img src="${item.image || DEFAULT_IMAGE}" alt="${item.name}">
+      <h2>${item.name}</h2>
+      <p>${item.description}</p>
+      <p><b>$${item.price}</b></p>
+      <button class="delete-btn" onclick="deleteItem(${item.id})"><i data-lucide='trash-2'></i></button>
+      <button class="logs-btn" onclick="showLogs(${item.id})"><i data-lucide='list'></i> Logs</button>
+    `;
+    previewContainer.appendChild(card);
+  });
+
+  lucide.createIcons();
 }
 
-form.addEventListener('submit', e => {
+form.addEventListener('submit', async (e) => {
   e.preventDefault();
   const data = {
     name: document.getElementById('name').value,
@@ -98,44 +97,41 @@ form.addEventListener('submit', e => {
     price: parseFloat(document.getElementById('price').value),
     image: document.getElementById('image').value || DEFAULT_IMAGE
   };
-  fetch('/api/items/add', {
+
+  const res = await fetch('/api/items/add', {
     method: 'POST',
-    headers: {'Content-Type':'application/json'},
+    headers: {'Content-Type': 'application/json'},
     body: JSON.stringify(data)
-  }).then(res => res.json())
-    .then(resp => {
-      if(resp.success) {
-        alert('Item added!');
-        form.reset();
-        loadItems();
-      } else alert(resp.error || 'Error adding item');
-    });
+  });
+
+  const resp = await res.json();
+  if (resp.success) {
+    alert('Item added!');
+    form.reset();
+    loadItems();
+  } else {
+    alert(resp.error || 'Error adding item');
+  }
 });
 
-function deleteItem(id) {
-  fetch('/api/items/delete', {
+async function deleteItem(id) {
+  const res = await fetch('/api/items/delete', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({id})
-  }).then(res => res.json())
-    .then(resp => {
-      if(resp.success) loadItems();
-      else alert('Error deleting item');
-    });
+    body: JSON.stringify({ id })
+  });
+  const resp = await res.json();
+  if (resp.success) loadItems();
+  else alert('Error deleting item');
 }
 
-// PURCHASE LOGS MODAL
-function showLogs(itemId) {
-  fetch(`/api/items/logs/${itemId}`)
-    .then(res => res.json())
-    .then(logs => {
-      logsContainer.innerHTML = logs.length ? logs.map(l=>`<div class="log-item">${l.user} bought ${l.name} ($${l.price}) at ${new Date(l.date).toLocaleString()}</div>`).join('') : '<p>No purchases yet.</p>';
-      logsModal.style.display='flex';
-    });
+// PURCHASE LOGS MODAL (optional for future)
+function showLogs(id) {
+  alert('Purchase logs not implemented yet in this version.');
 }
 
 function closeLogs() {
-  logsModal.style.display='none';
+  logsModal.style.display = 'none';
 }
 
 // Close modal on click outside
@@ -143,7 +139,6 @@ window.onclick = e => {
   if(e.target == logsModal) logsModal.style.display='none';
 }
 
-// Initial load
 loadItems();
 </script>
 
