@@ -62,7 +62,7 @@ button:hover { background:#0097a7; }
 lucide.createIcons();
 
 let cart = JSON.parse(localStorage.getItem('cart')) || [];
-const logs = JSON.parse(localStorage.getItem('purchaseLogs')) || [];
+let logs = JSON.parse(localStorage.getItem('purchaseLogs')) || [];
 
 const cartContainer = document.getElementById('cartItems');
 const totalDisplay = document.getElementById('cartTotal');
@@ -125,20 +125,21 @@ checkoutBtn.onclick = ()=>{
   });
   if(selectedItems.length===0) return alert("Please select at least one item!");
 
-  // Save logs
+  // Save logs with email
   const now = new Date().toISOString();
   selectedItems.forEach(item=>{
-    logs.push({user: email, name: item.name, price: item.price, date: now});
+    logs.push({userEmail: email, name: item.name, price: item.price, date: now});
   });
   localStorage.setItem('purchaseLogs', JSON.stringify(logs));
 
+  // PayPal checkout
   const paypalEmail = "zxueondrugz@gmail.com";
   const itemsNote = encodeURIComponent(selectedItems.map(i=>i.name).join(", "));
   const amount = selectedItems.reduce((sum,i)=>sum+i.price,0);
   const url = `https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=${paypalEmail}&item_name=${itemsNote}&amount=${amount}&currency_code=USD`;
   window.open(url,'_blank');
 
-  // Clear purchased items from cart
+  // Remove purchased items from cart
   cart = cart.filter(item => !selectedItems.includes(item));
   localStorage.setItem('cart', JSON.stringify(cart));
   renderCart();
@@ -146,6 +147,5 @@ checkoutBtn.onclick = ()=>{
 
 renderCart();
 </script>
-
 </body>
 </html>
