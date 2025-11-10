@@ -14,7 +14,7 @@ const ADMIN_PASSWORD = "Cardslawp123."; // change this
 const db = mysql.createConnection({
   host: "localhost",
   user: "root",
-  password: "",       // your MySQL password
+  password: "cards",       // your MySQL password
   database: "cardslawp" // make sure DB exists
 });
 
