@@ -8,7 +8,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // ===== Admin Password =====
-const ADMIN_PASSWORD = "yourAdminPassword"; // change this
+const ADMIN_PASSWORD = "Cardslawp123."; // change this
 
 // ===== MySQL Connection =====
 const db = mysql.createConnection({
