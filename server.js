@@ -1,89 +1,111 @@
-// server.js
 const express = require('express');
 const path = require('path');
-const fs = require('fs');
+const sqlite3 = require('sqlite3').verbose();
+const bodyParser = require('body-parser');
+const session = require('express-session');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // ===== MIDDLEWARE =====
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(session({
+  secret: 'cardslawpsecret',
+  resave: false,
+  saveUninitialized: true
+}));
 
-// ===== STORAGE =====
-const ITEMS_FILE = path.join(__dirname, 'items.json');
-let items = [];
+// ===== DATABASE =====
+const db = new sqlite3.Database(path.join(__dirname, 'items.db'), (err) => {
+  if (err) console.error(err);
+  else console.log('✅ Connected to SQLite database.');
+});
 
-// Load items from JSON if exists
-if (fs.existsSync(ITEMS_FILE)) {
-  items = JSON.parse(fs.readFileSync(ITEMS_FILE));
-}
+// Create table if not exists
+db.run(`
+CREATE TABLE IF NOT EXISTS items (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT,
+  description TEXT,
+  price TEXT,
+  image TEXT
+)
+`);
 
-// Save items to JSON
-function saveItems() {
-  fs.writeFileSync(ITEMS_FILE, JSON.stringify(items, null, 2));
-}
-
-// In-memory cart (reset on server restart)
-let cart = [];
-
-// ===== ROUTES =====
-app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
-app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'public', 'login.html')));
-app.get('/cart', (req, res) => res.sendFile(path.join(__dirname, 'public', 'cart.html')));
-app.get('/admin-login', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin-login.html')));
-app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
-
-// ===== ADMIN LOGIN (NO SESSION) =====
+// ===== ADMIN LOGIN =====
 const ADMIN_USERNAME = "admin";
 const ADMIN_PASSWORD = "password123";
 
 app.post('/admin-login', (req, res) => {
   const { username, password } = req.body;
   if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+    req.session.admin = true;
     return res.redirect('/admin');
   }
   res.send('Invalid credentials');
 });
 
+// ===== ROUTES =====
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'public', 'login.html')));
+app.get('/cart', (req, res) => res.sendFile(path.join(__dirname, 'public', 'cart.html')));
+app.get('/admin-login', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin-login.html')));
+app.get('/admin', (req, res) => {
+  if (req.session.admin) res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+  else res.redirect('/admin-login');
+});
+
 // ===== API =====
 
-// Get items
-app.get('/api/items', (req, res) => res.json(items));
+// Get all items
+app.get('/api/items', (req, res) => {
+  db.all('SELECT * FROM items', [], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  });
+});
 
 // Add item
 app.post('/api/items/add', (req, res) => {
   const { name, description, price, image } = req.body;
   if (!name || !description || !price || !image)
-    return res.status(400).json({ error: 'All fields are required' });
+    return res.status(400).json({ error: 'All fields required' });
 
-  const newItem = { _id: Date.now().toString(), name, description, price, image };
-  items.push(newItem);
-  saveItems();
-  res.json({ success: true, item: newItem });
+  db.run(
+    'INSERT INTO items (name, description, price, image) VALUES (?, ?, ?, ?)',
+    [name, description, price, image],
+    function(err) {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ success: true, id: this.lastID });
+    }
+  );
 });
 
 // Delete item
 app.post('/api/items/delete', (req, res) => {
   const { id } = req.body;
-  items = items.filter(item => item._id !== id);
-  saveItems();
-  res.json({ success: true });
+  db.run('DELETE FROM items WHERE id = ?', [id], function(err) {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ success: true });
+  });
 });
 
-// Add to cart
+// ===== CART (IN-MEMORY) =====
+let cart = [];
+
 app.post('/api/cart/add', (req, res) => {
   const { id } = req.body;
-  const item = items.find(i => i._id === id);
-  if (!item) return res.status(404).json({ error: 'Item not found' });
-  cart.push(item);
-  res.json({ success: true, cart });
+  db.get('SELECT * FROM items WHERE id = ?', [id], (err, row) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (!row) return res.status(404).json({ error: 'Item not found' });
+    cart.push(row);
+    res.json({ success: true, cart });
+  });
 });
 
-// Get cart
 app.get('/api/cart', (req, res) => res.json(cart));
-
-// Clear cart
 app.post('/api/cart/clear', (req, res) => { cart = []; res.json({ success: true }); });
 
 // ===== START SERVER =====
