@@ -9,7 +9,7 @@
 body { font-family: Arial, sans-serif; background:#f0f2f5; padding:20px; }
 h1 { text-align:center; margin-bottom:20px; }
 form { max-width:500px; margin:0 auto 30px auto; background:#fff; padding:20px; border-radius:15px; box-shadow:0 8px 16px rgba(0,0,0,0.1); display:flex; flex-direction:column; gap:10px; }
-input, select { padding:10px; border-radius:10px; border:1px solid #ccc; width:100%; }
+input { padding:10px; border-radius:10px; border:1px solid #ccc; width:100%; }
 button { padding:12px; border:none; border-radius:12px; background:#667eea; color:#fff; cursor:pointer; transition:0.3s; display:flex; align-items:center; gap:6px; justify-content:center; }
 button:hover { background:#764ba2; }
 .logout-btn { background:#f44336; margin-top:10px; }
@@ -48,7 +48,6 @@ button:hover { background:#764ba2; }
 
 <div class="preview-container" id="previewContainer"></div>
 
-<!-- MODAL FOR PURCHASE LOGS -->
 <div class="modal" id="logsModal">
   <div class="modal-content">
     <span class="close" onclick="closeLogs()">&times;</span>
@@ -67,29 +66,29 @@ const logsContainer = document.getElementById('logsContainer');
 
 const DEFAULT_IMAGE = 'https://em-content.zobj.net/source/noto-emoji-animations/344/gift_1f381.gif';
 
-async function loadItems() {
-  const res = await fetch('/api/items');
-  const items = await res.json();
-  previewContainer.innerHTML = '';
-
-  items.forEach(item => {
-    const card = document.createElement('div');
-    card.classList.add('card');
-    card.innerHTML = `
-      <img src="${item.image || DEFAULT_IMAGE}" alt="${item.name}">
-      <h2>${item.name}</h2>
-      <p>${item.description}</p>
-      <p><b>$${item.price}</b></p>
-      <button class="delete-btn" onclick="deleteItem(${item.id})"><i data-lucide='trash-2'></i></button>
-      <button class="logs-btn" onclick="showLogs(${item.id})"><i data-lucide='list'></i> Logs</button>
-    `;
-    previewContainer.appendChild(card);
-  });
-
-  lucide.createIcons();
+function loadItems() {
+  fetch('/api/items')
+    .then(res => res.json())
+    .then(items => {
+      previewContainer.innerHTML = '';
+      items.forEach(item => {
+        const card = document.createElement('div');
+        card.classList.add('card');
+        card.innerHTML = `
+          <img src="${item.image || DEFAULT_IMAGE}" alt="${item.name}">
+          <h2>${item.name}</h2>
+          <p>${item.description}</p>
+          <p><b>$${item.price}</b></p>
+          <button class="delete-btn" onclick="deleteItem(${item.id})"><i data-lucide="trash-2"></i></button>
+          <button class="logs-btn" onclick="showLogs(${item.id})"><i data-lucide="list"></i> Logs</button>
+        `;
+        previewContainer.appendChild(card);
+      });
+      lucide.createIcons();
+    });
 }
 
-form.addEventListener('submit', async (e) => {
+form.addEventListener('submit', e => {
   e.preventDefault();
   const data = {
     name: document.getElementById('name').value,
@@ -97,48 +96,49 @@ form.addEventListener('submit', async (e) => {
     price: parseFloat(document.getElementById('price').value),
     image: document.getElementById('image').value || DEFAULT_IMAGE
   };
-
-  const res = await fetch('/api/items/add', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify(data)
-  });
-
-  const resp = await res.json();
-  if (resp.success) {
-    alert('Item added!');
-    form.reset();
-    loadItems();
-  } else {
-    alert(resp.error || 'Error adding item');
-  }
-});
-
-async function deleteItem(id) {
-  const res = await fetch('/api/items/delete', {
+  fetch('/api/items/add', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ id })
-  });
-  const resp = await res.json();
-  if (resp.success) loadItems();
-  else alert('Error deleting item');
+    body: JSON.stringify(data)
+  }).then(res => res.json())
+    .then(resp => {
+      if(resp.success) {
+        form.reset();
+        loadItems();
+      } else alert(resp.error || 'Error adding item');
+    });
+});
+
+function deleteItem(id) {
+  fetch('/api/items/delete', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({id})
+  }).then(res => res.json())
+    .then(resp => {
+      if(resp.success) loadItems();
+      else alert('Error deleting item');
+    });
 }
 
-// PURCHASE LOGS MODAL (optional for future)
-function showLogs(id) {
-  alert('Purchase logs not implemented yet in this version.');
+function showLogs(itemId) {
+  fetch(`/api/items/logs/${itemId}`)
+    .then(res => res.json())
+    .then(logs => {
+      logsContainer.innerHTML = logs.length ? logs.map(l=>`<div class="log-item">${l.user || 'Guest'} bought item #${l.item_id} at ${new Date(l.date).toLocaleString()}</div>`).join('') : '<p>No purchases yet.</p>';
+      logsModal.style.display='flex';
+    });
 }
 
 function closeLogs() {
-  logsModal.style.display = 'none';
+  logsModal.style.display='none';
 }
 
-// Close modal on click outside
 window.onclick = e => {
   if(e.target == logsModal) logsModal.style.display='none';
 }
 
+// Initial load
 loadItems();
 </script>
 
