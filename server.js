@@ -1,13 +1,13 @@
 const express = require('express');
-const path = require('path');
-const sqlite3 = require('sqlite3').verbose();
 const bodyParser = require('body-parser');
 const session = require('express-session');
+const sqlite3 = require('sqlite3').verbose();
+const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ===== MIDDLEWARE =====
+// ===== Middleware =====
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
@@ -17,45 +17,38 @@ app.use(session({
   saveUninitialized: true
 }));
 
-// ===== DATABASE =====
-const db = new sqlite3.Database(path.join(__dirname, 'items.db'), (err) => {
-  if (err) console.error(err);
-  else console.log('✅ Connected to SQLite database.');
+// ===== SQLite setup =====
+const db = new sqlite3.Database('./cards.db', (err) => {
+  if (err) console.error(err.message);
+  else console.log('Connected to SQLite database.');
 });
 
-// Create table if not exists
-db.run(`
-CREATE TABLE IF NOT EXISTS items (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT,
-  description TEXT,
-  price TEXT,
-  image TEXT
-)
-`);
+// Create tables if not exists
+db.serialize(() => {
+  db.run(`CREATE TABLE IF NOT EXISTS items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    description TEXT,
+    price REAL NOT NULL,
+    image TEXT
+  )`);
 
-// ===== ADMIN LOGIN =====
-const ADMIN_USERNAME = "admin";
-const ADMIN_PASSWORD = "password123";
-
-app.post('/admin-login', (req, res) => {
-  const { username, password } = req.body;
-  if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
-    req.session.admin = true;
-    return res.redirect('/admin');
-  }
-  res.send('Invalid credentials');
+  db.run(`CREATE TABLE IF NOT EXISTS purchases (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    item_id INTEGER,
+    user TEXT,
+    date TEXT DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(item_id) REFERENCES items(id)
+  )`);
 });
 
-// ===== ROUTES =====
-app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
-app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'public', 'login.html')));
-app.get('/cart', (req, res) => res.sendFile(path.join(__dirname, 'public', 'cart.html')));
-app.get('/admin-login', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin-login.html')));
-app.get('/admin', (req, res) => {
-  if (req.session.admin) res.sendFile(path.join(__dirname, 'public', 'admin.html'));
-  else res.redirect('/admin-login');
-});
+// ===== Routes =====
+
+// Pages
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public/index.html')));
+app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public/admin.html')));
+app.get('/cart', (req, res) => res.sendFile(path.join(__dirname, 'public/cart.html')));
+app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'public/login.html')));
 
 // ===== API =====
 
@@ -67,46 +60,45 @@ app.get('/api/items', (req, res) => {
   });
 });
 
-// Add item
+// Add a new item (admin)
 app.post('/api/items/add', (req, res) => {
   const { name, description, price, image } = req.body;
-  if (!name || !description || !price || !image)
-    return res.status(400).json({ error: 'All fields required' });
-
-  db.run(
-    'INSERT INTO items (name, description, price, image) VALUES (?, ?, ?, ?)',
+  db.run(`INSERT INTO items (name, description, price, image) VALUES (?, ?, ?, ?)`,
     [name, description, price, image],
     function(err) {
-      if (err) return res.status(500).json({ error: err.message });
+      if (err) return res.status(500).json({ success: false, error: err.message });
       res.json({ success: true, id: this.lastID });
-    }
-  );
+    });
 });
 
-// Delete item
+// Delete item (admin)
 app.post('/api/items/delete', (req, res) => {
   const { id } = req.body;
-  db.run('DELETE FROM items WHERE id = ?', [id], function(err) {
-    if (err) return res.status(500).json({ error: err.message });
+  db.run(`DELETE FROM items WHERE id=?`, [id], function(err) {
+    if (err) return res.status(500).json({ success: false, error: err.message });
     res.json({ success: true });
   });
 });
 
-// ===== CART (IN-MEMORY) =====
-let cart = [];
+// Add a purchase (cart checkout)
+app.post('/api/purchase', (req, res) => {
+  const { item_id, user } = req.body;
+  db.run(`INSERT INTO purchases (item_id, user) VALUES (?, ?)`,
+    [item_id, user || 'Guest'],
+    function(err) {
+      if (err) return res.status(500).json({ success: false, error: err.message });
+      res.json({ success: true, id: this.lastID });
+    });
+});
 
-app.post('/api/cart/add', (req, res) => {
-  const { id } = req.body;
-  db.get('SELECT * FROM items WHERE id = ?', [id], (err, row) => {
+// Get purchase logs for an item
+app.get('/api/items/logs/:id', (req, res) => {
+  const itemId = req.params.id;
+  db.all(`SELECT * FROM purchases WHERE item_id=? ORDER BY date DESC`, [itemId], (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
-    if (!row) return res.status(404).json({ error: 'Item not found' });
-    cart.push(row);
-    res.json({ success: true, cart });
+    res.json(rows);
   });
 });
 
-app.get('/api/cart', (req, res) => res.json(cart));
-app.post('/api/cart/clear', (req, res) => { cart = []; res.json({ success: true }); });
-
-// ===== START SERVER =====
-app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+// ===== Start server =====
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
