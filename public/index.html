@@ -1,90 +1,166 @@
-const express = require('express');
-const bodyParser = require('body-parser');
-const session = require('express-session');
-const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CardsLawp | Gift Cards</title>
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+/* ===== BASIC RESET ===== */
+* { margin:0; padding:0; box-sizing:border-box; font-family:'Arial',sans-serif; }
+body { background:#f0f2f5; color:#333; padding-top:70px; }
 
-const app = express();
-const PORT = process.env.PORT || 3000;
+/* ===== NAVBAR ===== */
+.navbar {
+  position: fixed; top:0; width:100%; display:flex; justify-content:space-between; align-items:center;
+  padding:10px 5vw; background:rgba(50,50,50,0.95); backdrop-filter:blur(10px); box-shadow:0 4px 6px rgba(0,0,0,0.2);
+  z-index:1000; border-radius:0 0 15px 15px;
+}
+.navbar .logo { font-size:1.5em; font-weight:bold; color:#fff; }
+.navbar .nav-links a { margin-left:20px; padding:8px 15px; border:none; background:rgba(255,255,255,0.1);
+  color:#fff; border-radius:10px; cursor:pointer; text-decoration:none; transition:0.3s; }
+.navbar .nav-links a:hover, .navbar .nav-links a.active { background:rgba(255,255,255,0.25); }
 
-// Middleware
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, 'public')));
-app.use(session({
-  secret: 'cardslawpsecret',
-  resave: false,
-  saveUninitialized: true
-}));
+/* ===== HERO ===== */
+.hero { 
+  text-align:center; 
+  padding:150px 20px 50px; 
+  background: linear-gradient(to right, #667eea, #764ba2);
+  color:#fff; 
+}
+.hero h1 { font-size:3em; margin-bottom:20px; }
+.hero p { font-size:1.2em; margin-bottom:30px; }
+.hero .hero-btn { padding:12px 30px; border:none; border-radius:12px; background:#fff; color:#764ba2; font-weight:bold; cursor:pointer; transition:0.3s; }
+.hero .hero-btn:hover { background:#f0f0f0; }
 
-// SQLite setup
-const db = new sqlite3.Database('./cards.db', (err) => {
-  if (err) console.error(err);
-  else console.log('Connected to SQLite database');
-});
+/* ===== CARDS ===== */
+.cards-container { display:flex; flex-wrap:wrap; justify-content:center; gap:20px; padding:50px 20px; }
+.card { background:#fff; border-radius:15px; padding:15px; width:250px; text-align:center; box-shadow:0 8px 16px rgba(0,0,0,0.1); transition:0.3s; cursor:pointer; }
+.card img { width:100%; border-radius:10px; margin-bottom:10px; }
+.card h2 { font-size:1.2em; margin-bottom:5px; }
+.card p { font-size:0.9em; margin-bottom:10px; }
+.card button { padding:8px 15px; border:none; background:#667eea; color:#fff; border-radius:10px; cursor:pointer; transition:0.3s; }
+.card button:hover { background:#764ba2; }
 
-// Create tables if not exist
-db.serialize(() => {
-  db.run(`CREATE TABLE IF NOT EXISTS items (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    description TEXT,
-    price REAL NOT NULL,
-    image TEXT
-  )`);
+/* ===== MODAL ===== */
+.modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); justify-content:center; align-items:center; z-index:2000; }
+.modal-content { background:#fff; border-radius:15px; padding:20px; max-width:400px; width:90%; text-align:center; position:relative; }
+.modal-content img { width:100%; border-radius:10px; margin-bottom:10px; }
+.modal-content .close { position:absolute; top:10px; right:15px; font-size:1.5em; cursor:pointer; }
+.modal-content .addCartBtn { padding:10px 20px; border:none; border-radius:12px; background:#667eea; color:#fff; cursor:pointer; transition:0.3s; }
+.modal-content .addCartBtn:hover { background:#764ba2; }
 
-  db.run(`CREATE TABLE IF NOT EXISTS purchases (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    item_id INTEGER,
-    user TEXT,
-    date TEXT DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY(item_id) REFERENCES items(id)
-  )`);
-});
+/* ===== MOBILE RESPONSIVE ===== */
+@media(max-width:768px){
+  body{font-size:4vw;}
+  .navbar{flex-direction:column; align-items:center;}
+  .navbar .nav-links{width:100%; flex-wrap:wrap; justify-content:center; gap:5vw;}
+  .navbar .nav-links a{flex:1 1 40%; font-size:3vw;}
+  .hero{padding:20vh 5vw 10vh;}
+  .hero h1{font-size:8vw;}
+  .hero p{font-size:4vw;}
+  .hero .hero-btn{padding:3vw 6vw; font-size:4vw;}
+  .cards-container{padding:10vh 5vw; gap:5vw;}
+  .card{width:90%; padding:4vw;}
+  .card h2{font-size:4vw;}
+  .card p{font-size:3.5vw;}
+  .card button{font-size:3.5vw; padding:2vw 4vw;}
+  .modal-content{width:90%; padding:5vw;}
+}
+</style>
+</head>
+<body>
 
-// Routes
-app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public/index.html')));
-app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public/admin.html')));
-app.get('/cart', (req, res) => res.sendFile(path.join(__dirname, 'public/cart.html')));
-app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'public/login.html')));
+<div class="navbar">
+  <div class="logo"><i data-lucide="credit-card"></i> CardsLawp</div>
+  <div class="nav-links">
+    <a href="/" class="active"><i data-lucide="home"></i> Home</a>
+    <a href="cart.html"><i data-lucide="shopping-cart"></i> Cart</a>
+    <a href="/login"><i data-lucide="user"></i> Login</a>
+  </div>
+</div>
 
-// API: Get all items
-app.get('/api/items', (req, res) => {
-  db.all('SELECT * FROM items', [], (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(rows);
+<section class="hero">
+  <h1><i data-lucide="gift"></i> Welcome to CardsLawp</h1>
+  <p>Buy digital gift cards instantly — fast, secure, and verified.</p>
+  <button class="hero-btn" onclick="scrollToCards()"><i data-lucide='shopping-bag'></i> Shop Now</button>
+</section>
+
+<section class="cards-container" id="products"></section>
+
+<!-- PRODUCT MODAL -->
+<div class="modal" id="productModal">
+  <div class="modal-content">
+    <span class="close" onclick="closeModal()">&times;</span>
+    <img id="modalImage" src="" alt="">
+    <h2 id="modalTitle"></h2>
+    <p id="modalDesc"></p>
+    <p id="modalPrice"></p>
+    <button class="addCartBtn" id="modalAddBtn"><i data-lucide="plus-circle"></i> Add to Cart</button>
+  </div>
+</div>
+
+<script>
+lucide.createIcons();
+
+// Scroll to products
+function scrollToCards() {
+  document.getElementById('products').scrollIntoView({behavior:'smooth'});
+}
+
+// Open modal
+function openModal(item){
+  document.getElementById('modalImage').src = item.image;
+  document.getElementById('modalTitle').innerText = item.name;
+  document.getElementById('modalDesc').innerText = item.description;
+  document.getElementById('modalPrice').innerText = `$${item.price}`;
+  document.getElementById('productModal').style.display = 'flex';
+  document.getElementById('modalAddBtn').onclick = ()=>addToCart(item);
+}
+
+function closeModal(){
+  document.getElementById('productModal').style.display = 'none';
+}
+
+// ===== ADD TO CART USING LOCALSTORAGE =====
+function addToCart(item){
+  let cart = JSON.parse(localStorage.getItem('cart')) || [];
+  cart.push({
+    id: item._id,
+    name: item.name,
+    price: item.price,
+    img: item.image,
+    icon: 'gift'
   });
-});
+  localStorage.setItem('cart', JSON.stringify(cart));
+  alert('Item added to cart!');
+}
 
-// API: Add item
-app.post('/api/items/add', (req, res) => {
-  const { name, description, price, image } = req.body;
-  db.run(`INSERT INTO items (name, description, price, image) VALUES (?, ?, ?, ?)`,
-    [name, description, price, image],
-    function(err) {
-      if (err) return res.status(500).json({ success: false, error: err.message });
-      res.json({ success: true, id: this.lastID });
-    }
-  );
+// ===== LOAD ITEMS FROM SERVER =====
+document.addEventListener('DOMContentLoaded', ()=>{
+  fetch('/api/items')
+    .then(res=>res.json())
+    .then(items=>{
+      window.items = items; // globally available for modal
+      const container = document.getElementById('products');
+      container.innerHTML='';
+      items.forEach(item=>{
+        const card = document.createElement('div');
+        card.className='card';
+        card.innerHTML = `
+          <img src="${item.image}" alt="${item.name}">
+          <h2>${item.name}</h2>
+          <p>${item.description}</p>
+          <p><b>$${item.price}</b></p>
+          <button><i data-lucide="eye"></i> View</button>
+        `;
+        card.querySelector('button').addEventListener('click',()=>openModal(item));
+        container.appendChild(card);
+      });
+      lucide.createIcons();
+    })
+    .catch(err=>console.error("Error fetching items:", err));
 });
-
-// API: Delete item
-app.post('/api/items/delete', (req, res) => {
-  const { id } = req.body;
-  db.run(`DELETE FROM items WHERE id=?`, [id], function(err) {
-    if (err) return res.status(500).json({ success: false, error: err.message });
-    res.json({ success: true });
-  });
-});
-
-// API: Get purchase logs
-app.get('/api/items/logs/:id', (req, res) => {
-  const itemId = req.params.id;
-  db.all(`SELECT * FROM purchases WHERE item_id=? ORDER BY date DESC`, [itemId], (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(rows);
-  });
-});
-
-// Start server
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+</script>
+</body>
+</html>
